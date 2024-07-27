@@ -1,0 +1,21 @@
+﻿@model Eve.Mvc.Models.User
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@* <div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div> *@
+
+<div>
+    <a href="/">Return</a>
+    <br />
+    @Model.AccessToken
+    <br />
+    @Model.UserId
+    <br />
+    @Model.TokenGrantedDateTime.Value.ToLocalTime().ToLongDateString() @Model.TokenGrantedDateTime.Value.ToLocalTime().ToLongTimeString()
+    <br />
+    @DateTime.Now.ToLongDateString() @DateTime.Now.ToLongTimeString()
+</div>

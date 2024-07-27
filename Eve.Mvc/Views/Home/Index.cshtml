@@ -1,0 +1,88 @@
+﻿@model Eve.Mvc.Models.IndexModel
+@{
+    ViewData["Title"] = "Home Page";
+    var eveUniverseTypesDictionary = await Model.Types;
+}
+
+<div>
+    @Model.User.AccessToken
+    <br />
+    @Model.User.BearerToken
+    <br />
+    @Model.User.UserId
+    <br />
+    @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongDateString() @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongTimeString()
+    <br />
+    @Model.User.TokenExpirationDate.ToLocalTime().ToLongDateString() @Model.User.TokenExpirationDate.ToLocalTime().ToLongTimeString()
+    <br />
+    @DateTime.Now.ToLongDateString() @DateTime.Now.ToLongTimeString()
+</div>
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <td style="text-align: center;">TypeName</td>
+            <td style="text-align: center;">Price</td>
+            <td style="text-align: center;">TotalValue</td>
+            <td style="text-align: center;">VolumeTotal</td>
+            <td style="text-align: center;">VolumeRemain</td>
+            <td style="text-align: center;">Remaining</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var marketOrder in (await Model.EveMarketOrdersTask).OrderBy(mo => mo.TimeRemaining))
+        {
+            <tr>
+                <td>
+                    @eveUniverseTypesDictionary[marketOrder.TypeId].Name 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
+                    </svg>
+                </td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price*marketOrder.VolumeRemain)</td>
+                <td>@marketOrder.VolumeTotal</td>
+                <td>@marketOrder.VolumeRemain</td>
+                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string HumanReadableTimeSpan(TimeSpan t)
+    {
+        if (t.TotalSeconds <= 1) {
+            return $@"{t:s\.ff} seconds";
+        }
+        if (t.TotalMinutes <= 1) {
+            return $@"{t:%s} seconds";
+        }
+        if (t.TotalHours <= 1) {
+            return $@"{t:%m} minutes";
+        }
+        if (t.TotalDays <= 1) {
+            return $@"{t:%h} hours";
+        }
+
+        return $@"{t:%d} days";
+    }
+
+    private string EveReadableIskValue(decimal d)
+    {
+        if (d > 1000000000) // billion
+        {
+            return (d / 1000000000).ToString("F2") + "b";
+        }
+        if (d > 1000000) // million
+        {
+            return (d / 1000000).ToString("F2") + "m";
+        }
+        if (d > 1000) // thousand
+        {
+            return (d / 1000).ToString("F2") + "k";
+        }
+        return d.ToString("00");
+    }
+} 

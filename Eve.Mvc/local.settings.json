@@ -1,0 +1,6 @@
+{
+    "AppConfigConnectionString": "",
+    "ClientId": "",
+    "ClientSecret": "",
+    "CallbackUrl": "https://localhost:7172/callback"
+}
