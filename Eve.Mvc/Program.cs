@@ -1,6 +1,7 @@
 using Eve.Mvc.Services;
 using Eve.Mvc.Services.Memory;
 using Eve.Mvc.Services.Interfaces;
+using EveOnlineMarket.Eve.Mvc.Services;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -13,6 +14,20 @@ builder
     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
+string appConfigConnectionString =
+            // Windows config value
+            builder.Configuration[_appConfigEnvironmentVariableName]
+            // Linux config value
+            ?? builder.Configuration[$"Values:{_appConfigEnvironmentVariableName}"]
+            ?? throw new ArgumentNullException(_appConfigEnvironmentVariableName);
+
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .AddAzureAppConfiguration(appConfigConnectionString)
+    .Build();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
@@ -20,6 +35,12 @@ builder.Services.AddScoped<IAuthenticationService, OAuth2AuthenticationService>(
 builder.Services.AddSingleton<IUserRepository, MemoryUserRepository>();
 builder.Services.AddScoped<IEveApi, EveApiService>();
 builder.Services.AddSingleton(builder.Configuration);
+
+builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
+    .Configure<IConfiguration>((settings, configuration) =>
+    {
+        configuration.GetSection(_applicationNameConfigurationService).Bind(settings);
+    });
 
 builder.Services.AddSession(options =>
 {

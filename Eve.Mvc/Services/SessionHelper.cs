@@ -5,13 +5,15 @@ using Eve.Mvc.Services.Interfaces;
 
 public class SessionHelper : ISessionHelper
 {
-    public void Add(ISession session, string key, object value)
+    public void Add(string key, object value)
     {
-        session[key] = value;
+        // session[key] = value;
+        throw new NotImplementedException();
     }
 
     public object Get(string key)
     {
-        return HttpContext.Session[key];
+        //return HttpContext.Session[key];
+        throw new NotImplementedException();
     }
 }

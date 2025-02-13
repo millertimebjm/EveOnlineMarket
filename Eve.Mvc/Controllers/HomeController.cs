@@ -4,6 +4,9 @@ using EveOnlineMarket.Models;
 using Eve.Mvc.Services.Interfaces;
 using System.Web;
 using Eve.Mvc.Models;
+using EveOnlineMarket.Eve.Mvc.Services.Interfaces;
+using EveOnlineMarket.Eve.Mvc.Services;
+using Microsoft.Extensions.Options;
 
 namespace EveOnlineMarket.Controllers;
 
@@ -13,25 +16,31 @@ public class HomeController : Controller
     private readonly IAuthenticationService _authenticationService;
     private readonly IUserRepository _userRepository;
     private readonly IEveApi _eveApiService;
-    private readonly IConfiguration _configuration;
     private const string SessionUserId = "_UserId";
+    private readonly IEveOnlineMarketConfiguration _configuration;
 
     public HomeController(
         IAuthenticationService authenticationService,
         IUserRepository userRepository,
         IEveApi eveApiService,
-        IConfiguration configuration,
+        IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         ILogger<HomeController> logger)
     {
         _authenticationService = authenticationService;
         _userRepository = userRepository;
         _eveApiService = eveApiService;
         _logger = logger;
-        _configuration = configuration;
+        _configuration = options.Value;
     }
 
     public async Task<IActionResult> Index()
     {
+        var clientId = _configuration.GetClientId();
+        if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+
+        var clientSecret = _configuration.GetClientSecret();
+        if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
+
         var userIdString = HttpContext.Session.GetString(SessionUserId);
         if (string.IsNullOrEmpty(userIdString))
         {
@@ -45,8 +54,8 @@ public class HomeController : Controller
         if (DateTime.UtcNow > model.User.TokenExpirationDate)
         {
             var authenticationResponseModel = await _authenticationService.RefreshAccessToken(
-                _configuration["ClientId"],
-                _configuration["ClientSecret"],
+                clientId,
+                clientSecret,
                 model.User.BearerToken);
             model.User.AccessToken = authenticationResponseModel.AccessToken;
             model.User.BearerToken = authenticationResponseModel.RefreshToken;
@@ -89,8 +98,12 @@ public class HomeController : Controller
     [Route("login")]
     public IActionResult Login()
     {
-        var clientId = _configuration["ClientId"];
-        var callback = HttpUtility.UrlEncode(_configuration["CallbackUrl"]);
+        var clientId = _configuration.GetClientId();
+        if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+
+        var callback = _configuration.GetCallbackUrl();
+        if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(callback));
+
         var state = HttpUtility.UrlEncode(Guid.NewGuid().ToString());
         var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1");
         return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback}&state={state}&scope={scopes}");
@@ -110,14 +123,20 @@ public class HomeController : Controller
     [Route("callback")]
     public async Task<IActionResult> Callback(string code, string state)
     {
+        var clientId = _configuration.GetClientId();
+        if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+
+        var clientSecret = _configuration.GetClientSecret();
+        if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
+
         var user = new User
         {
             AuthorizationCode = code
         };
         var authenticationResponseModel = await _authenticationService.GetAccessToken(
             user.AuthorizationCode,
-            _configuration["ClientId"],
-            _configuration["ClientSecret"]);
+            clientId,
+            clientSecret);
         user.AccessToken = authenticationResponseModel.AccessToken;
         user.BearerToken = authenticationResponseModel.RefreshToken;
         user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
