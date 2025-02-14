@@ -19,10 +19,12 @@
 </div>
 
 
+    using System.Runtime.InteropServices;
 <table class="table">
     <thead>
         <tr>
             <td style="text-align: center;">TypeName</td>
+            <td style="text-align: center;">OrderId</td>
             <td style="text-align: center;">Price</td>
             <td style="text-align: center;">TotalValue</td>
             <td style="text-align: center;">VolumeTotal</td>
@@ -35,11 +37,12 @@
         {
             <tr>
                 <td>
-                    @eveUniverseTypesDictionary[marketOrder.TypeId].Name 
+                    @Html.ActionLink(eveUniverseTypesDictionary[marketOrder.TypeId].Name, "GetBuySellOrders", new { typeid = marketOrder.TypeId })&nbsp;
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
                         <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
                     </svg>
                 </td>
+                <td style="text-align: right;">@marketOrder.OrderId</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price*marketOrder.VolumeRemain)</td>
                 <td>@marketOrder.VolumeTotal</td>
@@ -85,4 +88,4 @@
         }
         return d.ToString("00");
     }
-} 
+}

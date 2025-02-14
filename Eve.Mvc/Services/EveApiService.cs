@@ -10,6 +10,7 @@ public class EveApiService : IEveApi
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ConcurrentDictionary<int, EveUniverseType> _typeCache;
+    private readonly Logger<EveApiService> _logger;
 
     public EveApiService(
         IHttpClientFactory httpClientFactory)
@@ -30,6 +31,12 @@ public class EveApiService : IEveApi
                 PropertyNameCaseInsensitive = true
             });
         return eveMarketOrders;
+    }
+
+    public async Task<List<long>> GetMarketOrderIds(long userId, string accessToken)
+    {
+        var marketOrders = await GetMarketOrders(userId, accessToken);
+        return marketOrders.Select(x => x.OrderId).ToList();
     }
 
     public async Task<EveUniverseType> GetUniverseType(
@@ -58,5 +65,27 @@ public class EveApiService : IEveApi
         response.EnsureSuccessStatusCode();
         var responseDynamic = await response.Content.ReadFromJsonAsync<EveCharacterResponse>();
         return responseDynamic.CharacterId;
+    }
+
+    public async Task<dynamic> GetBuySellOrders(int typeId, string accessToken)
+    {
+        int regionId = 10000002;
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));  
+        response.EnsureSuccessStatusCode();
+        var buySellOrders = JsonSerializer.Deserialize<dynamic>(
+            await response.Content.ReadAsStringAsync(),
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        return buySellOrders;
+
+//         base_url = "https://api.evemarketer.com/ec/marketstat"
+// params = {
+//     'typeid': YOUR_TYPE_ID,
+//     'regionlimit': 10000002,  # The Forge region ID
+//     'usesystem': 30000142     # Jita system ID
+// }
     }
 }

@@ -7,6 +7,7 @@ using Eve.Mvc.Models;
 using EveOnlineMarket.Eve.Mvc.Services.Interfaces;
 using EveOnlineMarket.Eve.Mvc.Services;
 using Microsoft.Extensions.Options;
+using System.Text;
 
 namespace EveOnlineMarket.Controllers;
 
@@ -33,36 +34,45 @@ public class HomeController : Controller
         _configuration = options.Value;
     }
 
-    public async Task<IActionResult> Index()
+    private async Task<User> GetUser()
     {
-        var clientId = _configuration.GetClientId();
-        if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
-
-        var clientSecret = _configuration.GetClientSecret();
-        if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
-
         var userIdString = HttpContext.Session.GetString(SessionUserId);
         if (string.IsNullOrEmpty(userIdString))
         {
-            return Redirect("/login");
+            return null;
         }
-        var model = new IndexModel
-        {
-            User = await _userRepository.Get(int.Parse(userIdString))
-        };
+        var user = await _userRepository.Get(long.Parse(userIdString));
+        if (user == null) throw new Exception("");
 
-        if (DateTime.UtcNow > model.User.TokenExpirationDate)
+        if (DateTime.UtcNow > user.TokenExpirationDate)
         {
+            var clientId = _configuration.GetClientId();
+            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
+
+            var clientSecret = _configuration.GetClientSecret();
+            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
             var authenticationResponseModel = await _authenticationService.RefreshAccessToken(
                 clientId,
                 clientSecret,
-                model.User.BearerToken);
-            model.User.AccessToken = authenticationResponseModel.AccessToken;
-            model.User.BearerToken = authenticationResponseModel.RefreshToken;
-            model.User.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
-            model.User.TokenExpirationDate = authenticationResponseModel.IssuedDate.AddSeconds(authenticationResponseModel.ExpiresIn);
-            await _userRepository.Upsert(model.User);
+                user.BearerToken);
+            user.AccessToken = authenticationResponseModel.AccessToken;
+            user.BearerToken = authenticationResponseModel.RefreshToken;
+            user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
+            user.TokenExpirationDate = authenticationResponseModel.IssuedDate.AddSeconds(authenticationResponseModel.ExpiresIn);
+            await _userRepository.Upsert(user);
         }
+        return user;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
+
+        var model = new IndexModel
+        {
+            User = user,
+        };
 
         model.EveMarketOrdersTask = _eveApiService.GetMarketOrders(
             model.User.UserId, 
@@ -112,6 +122,22 @@ public class HomeController : Controller
     public IActionResult Privacy()
     {
         return View();
+    }
+
+    public async Task<IActionResult> GetBuySellOrders(int typeId)
+    {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
+
+        var model = new GetBuySellOrdersViewModel()
+        {
+            User = user,
+            MarketOrders = await _eveApiService.GetBuySellOrders(typeId, user.AccessToken),
+            UserOrderIds = _eveApiService.GetMarketOrderIds(
+                user.UserId, 
+                user.AccessToken)
+        };
+        return Json(model);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

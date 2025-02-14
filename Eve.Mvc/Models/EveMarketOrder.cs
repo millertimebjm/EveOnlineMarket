@@ -15,6 +15,8 @@ public class EveMarketOrder
 // title: get_characters_character_id_orders_escrow
 // For buy orders, the amount of ISK in escrow
 
+    [JsonPropertyName("is_buy_order")]
+    public bool IsBuyOrder {get; set;}
 // is_buy_order	boolean
 // title: get_characters_character_id_orders_is_buy_order
 // True if the order is a bid (buy) order
