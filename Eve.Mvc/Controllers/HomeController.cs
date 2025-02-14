@@ -129,15 +129,23 @@ public class HomeController : Controller
         var user = await GetUser();
         if (user == null) return Redirect("/login");
 
+        var eveMarketOrdersTask = _eveApiService.GetBuySellOrders(typeId, user.AccessToken);
+        var userOrderIdsTask = _eveApiService.GetMarketOrderIds(
+                user.UserId, 
+                user.AccessToken);
+                var typesTask = GetTypes(eveMarketOrdersTask, user.AccessToken);
+
         var model = new GetBuySellOrdersViewModel()
         {
             User = user,
-            MarketOrders = await _eveApiService.GetBuySellOrders(typeId, user.AccessToken),
-            UserOrderIds = _eveApiService.GetMarketOrderIds(
+            MarketOrdersTask = eveMarketOrdersTask,
+            UserOrderIdsTask = _eveApiService.GetMarketOrderIds(
                 user.UserId, 
-                user.AccessToken)
+                user.AccessToken),
+            TypesTask = GetTypes(eveMarketOrdersTask, user.AccessToken),
+            TypeId = typeId,
         };
-        return Json(model);
+        return View(model);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

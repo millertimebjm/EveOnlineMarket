@@ -67,13 +67,13 @@ public class EveApiService : IEveApi
         return responseDynamic.CharacterId;
     }
 
-    public async Task<dynamic> GetBuySellOrders(int typeId, string accessToken)
+    public async Task<List<EveMarketOrder>> GetBuySellOrders(int typeId, string accessToken)
     {
         int regionId = 10000002;
         var client = _httpClientFactory.CreateClient();
         var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));  
         response.EnsureSuccessStatusCode();
-        var buySellOrders = JsonSerializer.Deserialize<dynamic>(
+        var buySellOrders = JsonSerializer.Deserialize<List<EveMarketOrder>>(
             await response.Content.ReadAsStringAsync(),
             new JsonSerializerOptions
             {

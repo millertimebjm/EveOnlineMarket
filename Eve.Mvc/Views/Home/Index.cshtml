@@ -4,22 +4,18 @@
     var eveUniverseTypesDictionary = await Model.Types;
 }
 
-<div>
-    @Model.User.AccessToken
+@* <div>
+    Access: @Model.User.AccessToken
     <br />
-    @Model.User.BearerToken
+    Bearer: @Model.User.BearerToken
     <br />
-    @Model.User.UserId
+    UserId: @Model.User.UserId
     <br />
-    @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongDateString() @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongTimeString()
+    Token Granted: @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongDateString() @Model.User.TokenGrantedDateTime.Value.ToLocalTime().ToLongTimeString()
     <br />
-    @Model.User.TokenExpirationDate.ToLocalTime().ToLongDateString() @Model.User.TokenExpirationDate.ToLocalTime().ToLongTimeString()
-    <br />
-    @DateTime.Now.ToLongDateString() @DateTime.Now.ToLongTimeString()
-</div>
+    Token Expiration: @Model.User.TokenExpirationDate.ToLocalTime().ToLongDateString() @Model.User.TokenExpirationDate.ToLocalTime().ToLongTimeString()
+</div> *@
 
-
-    using System.Runtime.InteropServices;
 <table class="table">
     <thead>
         <tr>
