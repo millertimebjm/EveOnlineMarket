@@ -1,9 +1,10 @@
 namespace EveOnlineMarket.Eve.Mvc.Services.Interfaces
 {
-    public interface IEveOnlineMarketConfiguration 
+    public interface IEveOnlineMarketConfiguration
     {
         string? GetClientId();
         string? GetClientSecret();
         string? GetCallbackUrl();
+        string? GetConnectionString();
     }
 }

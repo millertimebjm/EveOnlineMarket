@@ -19,19 +19,22 @@ public class HomeController : Controller
     private readonly IEveApi _eveApiService;
     private const string SessionUserId = "_UserId";
     private readonly IEveOnlineMarketConfiguration _configuration;
+    private readonly ITypeRepository _typeRepository;
 
     public HomeController(
         IAuthenticationService authenticationService,
         IUserRepository userRepository,
         IEveApi eveApiService,
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
-        ILogger<HomeController> logger)
+        ILogger<HomeController> logger,
+        ITypeRepository typeRepository)
     {
         _authenticationService = authenticationService;
         _userRepository = userRepository;
         _eveApiService = eveApiService;
         _logger = logger;
         _configuration = options.Value;
+        _typeRepository = typeRepository;
     }
 
     private async Task<User> GetUser()
@@ -75,7 +78,7 @@ public class HomeController : Controller
         };
 
         model.EveMarketOrdersTask = _eveApiService.GetMarketOrders(
-            model.User.UserId, 
+            model.User.UserId,
             model.User.AccessToken);
 
         model.Types = GetTypes(model.EveMarketOrdersTask, model.User.AccessToken);
@@ -102,7 +105,11 @@ public class HomeController : Controller
 
     private async Task<EveUniverseType> GetType(int typeId, string accessToken)
     {
-        return await _eveApiService.GetUniverseType(typeId, accessToken);
+        var type = await _typeRepository.Get(typeId);
+        if (type != null) return type;
+        type = await _eveApiService.GetUniverseType(typeId, accessToken);
+        type = await _typeRepository.Upsert(type);
+        return type;
     }
 
     [Route("login")]
@@ -131,16 +138,16 @@ public class HomeController : Controller
 
         var eveMarketOrdersTask = _eveApiService.GetBuySellOrders(typeId, user.AccessToken);
         var userOrderIdsTask = _eveApiService.GetMarketOrderIds(
-                user.UserId, 
+                user.UserId,
                 user.AccessToken);
-                var typesTask = GetTypes(eveMarketOrdersTask, user.AccessToken);
+        var typesTask = GetTypes(eveMarketOrdersTask, user.AccessToken);
 
         var model = new GetBuySellOrdersViewModel()
         {
             User = user,
             MarketOrdersTask = eveMarketOrdersTask,
             UserOrderIdsTask = _eveApiService.GetMarketOrderIds(
-                user.UserId, 
+                user.UserId,
                 user.AccessToken),
             TypesTask = GetTypes(eveMarketOrdersTask, user.AccessToken),
             TypeId = typeId,
@@ -175,12 +182,12 @@ public class HomeController : Controller
         user.BearerToken = authenticationResponseModel.RefreshToken;
         user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
         user.TokenExpirationDate = authenticationResponseModel.IssuedDate.AddSeconds(authenticationResponseModel.ExpiresIn);
-        
+
         user.UserId = await _eveApiService.GetCharacterId(
             user.AccessToken
         );
         HttpContext.Session.SetString(SessionUserId, user.UserId.ToString());
-        
+
         await _userRepository.Upsert(user);
 
         return Redirect("/");
