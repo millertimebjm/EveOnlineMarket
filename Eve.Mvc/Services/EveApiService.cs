@@ -10,7 +10,6 @@ public class EveApiService : IEveApi
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ConcurrentDictionary<int, EveUniverseType> _typeCache;
-    private readonly Logger<EveApiService> _logger;
 
     public EveApiService(
         IHttpClientFactory httpClientFactory)
@@ -18,11 +17,11 @@ public class EveApiService : IEveApi
         _httpClientFactory = httpClientFactory;
         _typeCache = new();
     }
-    
+
     public async Task<List<EveMarketOrder>> GetMarketOrders(long userId, string accessToken)
     {
         var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{userId}/orders/?datasource=tranquility&token={accessToken}"));  
+        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{userId}/orders/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var eveMarketOrders = JsonSerializer.Deserialize<List<EveMarketOrder>>(
             await response.Content.ReadAsStringAsync(),
@@ -40,13 +39,13 @@ public class EveApiService : IEveApi
     }
 
     public async Task<EveUniverseType> GetUniverseType(
-        int typeId, 
+        int typeId,
         string accessToken)
     {
         if (_typeCache.TryGetValue(typeId, out var value)) return value;
-        
+
         var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/{typeId}/?datasource=tranquility&token={accessToken}"));  
+        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/{typeId}/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var type = JsonSerializer.Deserialize<EveUniverseType>(
             await response.Content.ReadAsStringAsync(),
@@ -71,7 +70,7 @@ public class EveApiService : IEveApi
     {
         int regionId = 10000002;
         var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));  
+        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));
         response.EnsureSuccessStatusCode();
         var buySellOrders = JsonSerializer.Deserialize<List<EveMarketOrder>>(
             await response.Content.ReadAsStringAsync(),
@@ -81,11 +80,11 @@ public class EveApiService : IEveApi
             });
         return buySellOrders;
 
-//         base_url = "https://api.evemarketer.com/ec/marketstat"
-// params = {
-//     'typeid': YOUR_TYPE_ID,
-//     'regionlimit': 10000002,  # The Forge region ID
-//     'usesystem': 30000142     # Jita system ID
-// }
+        //         base_url = "https://api.evemarketer.com/ec/marketstat"
+        // params = {
+        //     'typeid': YOUR_TYPE_ID,
+        //     'regionlimit': 10000002,  # The Forge region ID
+        //     'usesystem': 30000142     # Jita system ID
+        // }
     }
 }

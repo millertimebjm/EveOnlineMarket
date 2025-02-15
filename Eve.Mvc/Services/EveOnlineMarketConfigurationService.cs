@@ -7,25 +7,14 @@ namespace EveOnlineMarket.Eve.Mvc.Services
         public string? ClientId { get; set; }
         public string? ClientSecret { get; set; }
         public string? CallbackUrl { get; set; }
+        public string? ConnectionString { get; set; }
 
-        public EveOnlineMarketConfigurationService()
-        {
-            
-        }
+        public string? GetClientId() => ClientId;
 
-        public string? GetClientId()
-        {
-            return ClientId;
-        }
+        public string? GetClientSecret() => ClientSecret;
 
-        public string? GetClientSecret()
-        {
-            return ClientSecret;
-        }
+        public string? GetCallbackUrl() => CallbackUrl;
 
-        public string? GetCallbackUrl()
-        {
-            return CallbackUrl;
-        }
+        public string? GetConnectionString() => ConnectionString;
     }
 }

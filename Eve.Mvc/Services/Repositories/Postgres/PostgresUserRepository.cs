@@ -1,35 +1,45 @@
-
-using System.Collections.Concurrent;
 using Eve.Mvc.Models;
+using Eve.Mvc.Services.Repositories;
 using EveOnlineMarket.Eve.Mvc.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Eve.Mvc.Services.Memory;
 
 public class PostgresUserRepository : IUserRepository
 {
-    private readonly EveOnlineMarketConfigurationService _configuration;
+    private readonly EveDbContext _dbContext;
 
-    public PostgresUserRepository(IOptionsSnapshot<EveOnlineMarketConfigurationService> options)
+    public PostgresUserRepository(EveDbContext dbContext)
     {
-        _configuration = options.Value;
+        _dbContext = dbContext;
     }
 
     public async Task<IEnumerable<User>> GetAll()
     {
-        var values = _items.Values.ToList();
-        return await Task.FromResult(values);
+        return await _dbContext.Users.ToListAsync();
     }
 
     public async Task<User?> Get(long userId)
     {
-        var value = _items.GetValueOrDefault(userId);
-        return await Task.FromResult(value);
+        return await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId);
     }
 
     public async Task<User> Upsert(User user)
     {
-        var value = _items.AddOrUpdate(user.UserId, user, (id, oldUser) => user);
-        return await Task.FromResult(value);
+        var existingUser = await _dbContext.Users
+            .SingleOrDefaultAsync(u => u.UserId == user.UserId);
+
+        if (existingUser == null)
+        {
+            await _dbContext.Users.AddAsync(user);
+        }
+        else
+        {
+            _dbContext.Entry(existingUser).CurrentValues.SetValues(user);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return user;
     }
 }
