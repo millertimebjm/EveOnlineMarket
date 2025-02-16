@@ -20,10 +20,13 @@
 
 <script type="text/javascript">
     async function refreshTypesList() {
+        document.getElementById("TypesList").innerHTML = "";
+
         let url = "@Url.Action("TypesList")";
-        url += "?keyword=" + document.getElementById("keyword");
-        url += "&skip=" + document.getElementById("skip");
-        url += "&take=" + document.getElementById("take");
+        url += "?keyword=" + document.getElementById("keyword").value;
+        url += "&skip=" + document.getElementById("skip").value;
+        url += "&take=" + document.getElementById("take").value;
+        console.log(url);
         try {
             const response = await fetch(url);
             if (!response.ok) {
@@ -37,5 +40,21 @@
         }
     }
 
-    document.getElementById("searchButton").onclick += refreshTypesList;
+    document.getElementById("searchButton").onclick = async () => {
+        await refreshTypesList();
+    };
+
+    const keywordInput = document.getElementById('keyword');
+
+    // Add event listener for keydown events
+    keywordInput.addEventListener('keydown', async function (event) {
+        // Check if Enter key was pressed
+        if (event.key === 'Enter') {
+            // Prevent default form submission behavior if needed
+            event.preventDefault();
+
+            // Call the async function
+            await refreshTypesList();
+        }
+    });
 </script>

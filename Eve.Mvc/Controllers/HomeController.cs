@@ -203,11 +203,12 @@ public class HomeController : Controller
 
         var client = _httpClientFactory.CreateClient();
         var databaseTypes = await _typeRepository.GetAll();
+        var databaseTypesHashSet = databaseTypes.Select(t => t.TypeId).ToHashSet();
         await foreach (var typeId in _eveApiService.GetUniverseTypeIds(user.AccessToken))
         {
             //var type = await _typeRepository.Get(typeId);
-            var databaseType = databaseTypes.SingleOrDefault(t => t.TypeId == typeId);
-            if (databaseType != null) continue;
+            var databaseType = databaseTypesHashSet.SingleOrDefault(t => t == typeId);
+            if (typeId == 0 || databaseType > 0) continue;
             await Task.Delay(100);
             try
             {
@@ -226,9 +227,14 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Types()
     {
+        var model = new TypesListViewModel()
+        {
+            searchFilterModel = new EveUniverseTypeSearchFilterModel(),
+            eveUniverseTypes = await _typeRepository.Search(new EveUniverseTypeSearchFilterModel()),
+        };
         var typesModel = new TypesViewModel()
         {
-            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", new EveUniverseTypeSearchFilterModel()),
+            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", model),
         };
         return View(typesModel);
     }

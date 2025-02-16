@@ -52,11 +52,14 @@ public class PostgresTypeRepository : ITypeRepository
     {
         IQueryable<EveUniverseType> query = _dbContext.Types;
 
+        query = query.Where(q => q.MarketGroupId > 0);
+
         if (!string.IsNullOrWhiteSpace(searchFilterModel.Keyword))
         {
-            query = query.Where(q => q.Name.Contains(searchFilterModel.Keyword));
+            query = query.Where(q => q.Name.ToLower().Contains(searchFilterModel.Keyword.ToLower()));
         }
 
+        query = query.OrderBy(q => q.Name);
         if (searchFilterModel.Skip > 0) query = query.Skip(searchFilterModel.Skip);
         query = query.Take(searchFilterModel.Take);
 
