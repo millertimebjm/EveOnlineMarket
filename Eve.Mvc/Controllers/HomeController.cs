@@ -8,6 +8,10 @@ using EveOnlineMarket.Eve.Mvc.Services.Interfaces;
 using EveOnlineMarket.Eve.Mvc.Services;
 using Microsoft.Extensions.Options;
 using System.Text;
+using System.Net.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace EveOnlineMarket.Controllers;
 
@@ -20,6 +24,7 @@ public class HomeController : Controller
     private const string SessionUserId = "_UserId";
     private readonly IEveOnlineMarketConfiguration _configuration;
     private readonly ITypeRepository _typeRepository;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public HomeController(
         IAuthenticationService authenticationService,
@@ -27,7 +32,8 @@ public class HomeController : Controller
         IEveApi eveApiService,
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         ILogger<HomeController> logger,
-        ITypeRepository typeRepository)
+        ITypeRepository typeRepository,
+        IHttpClientFactory httpClientFactory)
     {
         _authenticationService = authenticationService;
         _userRepository = userRepository;
@@ -35,6 +41,7 @@ public class HomeController : Controller
         _logger = logger;
         _configuration = options.Value;
         _typeRepository = typeRepository;
+        _httpClientFactory = httpClientFactory;
     }
 
     private async Task<User> GetUser()
@@ -137,10 +144,6 @@ public class HomeController : Controller
         if (user == null) return Redirect("/login");
 
         var eveMarketOrdersTask = _eveApiService.GetBuySellOrders(typeId, user.AccessToken);
-        var userOrderIdsTask = _eveApiService.GetMarketOrderIds(
-                user.UserId,
-                user.AccessToken);
-        var typesTask = GetTypes(eveMarketOrdersTask, user.AccessToken);
 
         var model = new GetBuySellOrdersViewModel()
         {
@@ -149,7 +152,7 @@ public class HomeController : Controller
             UserOrderIdsTask = _eveApiService.GetMarketOrderIds(
                 user.UserId,
                 user.AccessToken),
-            TypesTask = GetTypes(eveMarketOrdersTask, user.AccessToken),
+            TypesTask = _typeRepository.GetMarketableTypes(),
             TypeId = typeId,
         };
         return View(model);
@@ -191,5 +194,90 @@ public class HomeController : Controller
         await _userRepository.Upsert(user);
 
         return Redirect("/");
+    }
+
+    public async Task<IActionResult> RefreshTypes()
+    {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
+
+        var client = _httpClientFactory.CreateClient();
+        var databaseTypes = await _typeRepository.GetAll();
+        await foreach (var typeId in _eveApiService.GetUniverseTypeIds(user.AccessToken))
+        {
+            //var type = await _typeRepository.Get(typeId);
+            var databaseType = databaseTypes.SingleOrDefault(t => t.TypeId == typeId);
+            if (databaseType != null) continue;
+            await Task.Delay(100);
+            try
+            {
+                var type = await _eveApiService.GetUniverseType(typeId, user.AccessToken);
+                await _typeRepository.Upsert(type);
+            }
+            catch
+            {
+                await Task.Delay(10 * 1000);
+                continue;
+            }
+        }
+
+        return Accepted();
+    }
+
+    public async Task<IActionResult> Types()
+    {
+        var typesModel = new TypesViewModel()
+        {
+            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", new EveUniverseTypeSearchFilterModel()),
+        };
+        return View(typesModel);
+    }
+
+    public async Task<IActionResult> TypesList(EveUniverseTypeSearchFilterModel searchFilterModel)
+    {
+        var model = new TypesListViewModel()
+        {
+            searchFilterModel = searchFilterModel,
+            eveUniverseTypes = await _typeRepository.Search(searchFilterModel),
+        };
+        return PartialView(model);
+    }
+}
+
+public static class ControllerExtensions
+{
+    public static async Task<string> RenderPartialViewToStringAsync<TModel>(
+        this Controller controller,
+        string viewName,
+        TModel model)
+    {
+        if (string.IsNullOrEmpty(viewName))
+            viewName = controller.ControllerContext.ActionDescriptor.ActionName;
+
+        controller.ViewData.Model = model;
+
+        using (var writer = new StringWriter())
+        {
+            var viewEngine = controller.HttpContext.RequestServices
+                .GetService<ICompositeViewEngine>() as ICompositeViewEngine;
+
+            var viewResult = viewEngine.FindView(controller.ControllerContext, viewName, false);
+
+            if (!viewResult.Success)
+                return $"A view with the name '{viewName}' could not be found";
+
+            var viewContext = new ViewContext(
+                controller.ControllerContext,
+                viewResult.View,
+                controller.ViewData,
+                controller.TempData,
+                writer,
+                new HtmlHelperOptions()
+            );
+
+            await viewResult.View.RenderAsync(viewContext);
+
+            return writer.GetStringBuilder().ToString();
+        }
     }
 }

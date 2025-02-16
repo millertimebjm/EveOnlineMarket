@@ -1,4 +1,3 @@
-
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Eve.Mvc.Models;
@@ -45,6 +44,14 @@ public class EveApiService : IEveApi
         if (_typeCache.TryGetValue(typeId, out var value)) return value;
 
         var client = _httpClientFactory.CreateClient();
+        return await GetUniverseType(typeId, accessToken, client);
+    }
+
+    public async Task<EveUniverseType> GetUniverseType(
+        int typeId,
+        string accessToken,
+        HttpClient client)
+    {
         var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/{typeId}/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var type = JsonSerializer.Deserialize<EveUniverseType>(
@@ -54,6 +61,37 @@ public class EveApiService : IEveApi
                 PropertyNameCaseInsensitive = true
             });
         return type;
+    }
+
+    public async IAsyncEnumerable<int> GetUniverseTypeIds(string accessToken)
+    {
+        var page = 1;
+        var typeIds = new List<int>();
+        do
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/?datasource=tranquility&token={accessToken}&page={page}"));
+            if ((int)response.StatusCode == 420)
+            {
+                await Task.Delay(60 * 1000);
+                continue;
+            }
+            response.EnsureSuccessStatusCode();
+
+            typeIds = JsonSerializer.Deserialize<List<int>>(
+                await response.Content.ReadAsStringAsync(),
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            foreach (var typeId in typeIds)
+            {
+                Console.WriteLine($"found a typeid: {typeId}");
+                yield return typeId;
+            }
+            page++;
+            await Task.Delay(5 * 1000);
+        } while (typeIds.Any());
     }
 
     public async Task<int> GetCharacterId(string accessToken)

@@ -12,4 +12,6 @@ public interface IEveApi
     Task<int> GetCharacterId(string accessToken);
 
     Task<List<EveMarketOrder>> GetBuySellOrders(int typeId, string accessToken);
+    Task<EveUniverseType> GetUniverseType(int typeId, string accessToken, HttpClient httpClient);
+    IAsyncEnumerable<int> GetUniverseTypeIds(string accessToken);
 }

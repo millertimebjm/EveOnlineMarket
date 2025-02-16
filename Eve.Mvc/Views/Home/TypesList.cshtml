@@ -1,0 +1,22 @@
+@model Eve.Mvc.Models.TypesListViewModel
+@* @{
+    ViewData["Title"] = "Home Page";
+} *@
+
+<table class="table">
+    <thead>
+        <tr>
+            <td style="text-align: center;">TypeId</td>
+            <td style="text-align: left;">Name</td>
+            <td style="text-align: left;">Marketable?</td>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var type in Model.eveUniverseTypes)
+{
+            <tr>
+                <td style="text-align: right;">@type.TypeId</td>
+                <td style="text-align: right;">@type.Name</td>
+                <td style="text-align: right;">@(type.MarketGroupId > 0 ? "true" : "false")</td>
+            </tr>
+}

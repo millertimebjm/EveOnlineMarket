@@ -1,8 +1,6 @@
 using Eve.Mvc.Models;
 using Eve.Mvc.Services.Repositories;
-using EveOnlineMarket.Eve.Mvc.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace Eve.Mvc.Services.Memory;
 
@@ -36,10 +34,33 @@ public class PostgresTypeRepository : ITypeRepository
         }
         else
         {
-            _dbContext.Entry(existingType).CurrentValues.SetValues(type);
+            var entry = _dbContext.Entry(existingType);
+            var hasChanges = entry.Properties.Any(p => p.IsModified);
+            if (hasChanges) await _dbContext.SaveChangesAsync();
         }
 
         await _dbContext.SaveChangesAsync();
         return type;
     }
+
+    public async Task<List<EveUniverseType>> GetMarketableTypes()
+    {
+        return await _dbContext.Types.Where(t => t.MarketGroupId > 0).ToListAsync();
+    }
+
+    public async Task<List<EveUniverseType>> Search(EveUniverseTypeSearchFilterModel searchFilterModel)
+    {
+        IQueryable<EveUniverseType> query = _dbContext.Types;
+
+        if (!string.IsNullOrWhiteSpace(searchFilterModel.Keyword))
+        {
+            query = query.Where(q => q.Name.Contains(searchFilterModel.Keyword));
+        }
+
+        if (searchFilterModel.Skip > 0) query = query.Skip(searchFilterModel.Skip);
+        query = query.Take(searchFilterModel.Take);
+
+        return await query.ToListAsync();
+    }
+
 }
