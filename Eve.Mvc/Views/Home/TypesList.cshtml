@@ -15,7 +15,7 @@
 @foreach (var type in Model.eveUniverseTypes)
 {
             <tr>
-                <td style="text-align: right;">@type.TypeId</td>
+                <td style="text-align: right;">@Html.ActionLink(type.TypeId.ToString(), "GetBuySellOrders", new { type.TypeId })</td>
                 <td style="text-align: right;">@type.Name</td>
                 <td style="text-align: right;">@(type.MarketGroupId > 0 ? "true" : "false")</td>
             </tr>
