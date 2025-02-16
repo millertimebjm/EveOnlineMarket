@@ -1,149 +1,91 @@
-@model Eve.Mvc.Models.GetBuySellOrdersViewModel
+@model Eve.Mvc.Models.TypesViewModel
 @{
-    ViewData["Title"] = "Home Page";
-    var eveUniverseTypesDictionary = await Model.TypesTask;
+    ViewData["Title"] = "Get Buy Sell Orders";
 }
 
 <div class="row">
     <div class="col-md-2 col-sm-4">
-        <form action="@Url.Action("GetBuySellOrders")">
-            <input type="text" class="form-control" name="typeId" value="@(Model.TypeId == 0 ? "" : Model.TypeId)"
-                placeholder="Type Id">
-            <input type="submit" class="btn btn-primary" value="Submit">
-        </form>
+        <input type="text" class="form-control" id="keyword" value="" placeholder="Keyword" style="margin-bottom: 5px;">
+        <input type="button" id="searchButton" class="btn btn-primary" value="Submit">
     </div>
 </div>
 
-<br />
+<div class="row">
+    <div class="col-md-3">
+        <div id="TypesList">
+            @Html.Raw(await Model.TypesListTask)
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div id="BuySellOrdersList"></div>
+    </div>
+</div>
 
-<h3>Sell Orders</h3>
-<table class="table">
-    <thead>
-        <tr>
-            <td style="text-align: center;">OrderId</td>
-            <td style="text-align: center;">Price</td>
-            <td style="text-align: center;">TotalValue</td>
-            <td style="text-align: center;">VolumeTotal</td>
-            <td style="text-align: center;">VolumeRemain</td>
-            <td style="text-align: center;">Remaining</td>
-        </tr>
-    </thead>
-    <tbody>
-        @{
-            int count = 0;
-        }
-        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => !mo.IsBuyOrder).OrderBy(mo => mo.Price))
-        {
-            <tr
-                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
-                @* <td>
-                    @Html.ActionLink(eveUniverseTypesDictionary[marketOrder.TypeId].Name, "GetBuySellOrders", new { typeid = marketOrder.TypeId })&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
-                    </svg>
-                </td> *@
-                <td style="text-align: right;">@marketOrder.OrderId</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
-                <td style="text-align: right;">@marketOrder.VolumeTotal</td>
-                <td style="text-align: right;">@marketOrder.VolumeRemain</td>
-                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
-            </tr>
-            count++;
-        }
-        @if (count > 4)
-        {
-            <tr>
-                <td colspan="6">Load more...</td>
-            </tr>
-        }
-    </tbody>
+<input type="hidden" id="skip" value="0">
+<input type="hidden" id="take" value="100">
 
-</table>
+<script type="text/javascript">
+    async function refreshBuySellOrdersList(event) {
+        console.log("item clicked dataset: " + event.target.dataset.id);
+        let url = "@Url.Action("GetBuySellOrdersList")";
+        url += "?typeId=" + event.target.dataset.id;
+        console.log(url);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
 
-<h3>Buy Orders</h3>
-<table class="table">
-    <thead>
-        <tr>
-            @* <td style="text-align: center;">TypeName</td> *@
-            <td style="text-align: center;">OrderId</td>
-            <td style="text-align: center;">Price</td>
-            <td style="text-align: center;">TotalValue</td>
-            <td style="text-align: center;">VolumeTotal</td>
-            <td style="text-align: center;">VolumeRemain</td>
-            <td style="text-align: center;">Remaining</td>
-        </tr>
-    </thead>
-    <tbody>
-        @{
-            count = 0;
+            const text = await response.text();
+            document.getElementById("BuySellOrdersList").innerHTML = text;
+        } catch (error) {
+            console.error(error.message);
         }
-        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => mo.IsBuyOrder).OrderByDescending(mo =>
-                mo.Price))
-        {
-            <tr
-                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
-                @* <td>
-                    @Html.ActionLink(eveUniverseTypesDictionary[marketOrder.TypeId].Name, "GetBuySellOrders", new { typeid = marketOrder.TypeId })&nbsp;
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
-                    </svg>
-                </td> *@
-                <td style="text-align: right;">@marketOrder.OrderId</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
-                <td style="text-align: right;">@marketOrder.VolumeTotal</td>
-                <td style="text-align: right;">@marketOrder.VolumeRemain</td>
-                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
-            </tr>
-            count++;
-        }
-        @if (count > 4)
-        {
-            <tr>
-                <td colspan="6">Load more...</td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-@functions {
-    private string HumanReadableTimeSpan(TimeSpan t)
-    {
-        if (t.TotalSeconds <= 1)
-        {
-            return $@"{t:s\.ff} seconds";
-        }
-        if (t.TotalMinutes <= 1)
-        {
-            return $@"{t:%s} seconds";
-        }
-        if (t.TotalHours <= 1)
-        {
-            return $@"{t:%m} minutes";
-        }
-        if (t.TotalDays <= 1)
-        {
-            return $@"{t:%h} hours";
-        }
-
-        return $@"{t:%d} days";
     }
 
-    private string EveReadableIskValue(decimal d)
-    {
-        if (d > 1000000000) // billion
-        {
-            return (d / 1000000000).ToString("F2") + "b";
+    async function refreshTypesList() {
+        document.getElementById("TypesList").innerHTML = "";
+
+        let url = "@Url.Action("TypesList")";
+        url += "?keyword=" + document.getElementById("keyword").value;
+        url += "&skip=" + document.getElementById("skip").value;
+        url += "&take=" + document.getElementById("take").value;
+        console.log(url);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const text = await response.text();
+            document.getElementById("TypesList").innerHTML = text;
+            const links = document.getElementsByClassName("typeLink");
+            for (let i = 0; i < links.length; i++) {
+                links[i].onclick = async (event) => {
+                    await refreshBuySellOrdersList(event);
+                };
+            }
+            console.log("set typeLink events");
+        } catch (error) {
+            console.error(error.message);
         }
-        if (d > 1000000) // million
-        {
-            return (d / 1000000).ToString("F2") + "m";
-        }
-        if (d > 1000) // thousand
-        {
-            return (d / 1000).ToString("F2") + "k";
-        }
-        return d.ToString("00");
     }
-}
+
+    document.getElementById("searchButton").onclick = async () => {
+        await refreshTypesList();
+    };
+
+    const keywordInput = document.getElementById('keyword');
+
+    // Add event listener for keydown events
+    keywordInput.addEventListener('keydown', async function (event) {
+        // Check if Enter key was pressed
+        if (event.key === 'Enter') {
+            // Prevent default form submission behavior if needed
+            event.preventDefault();
+
+            // Call the async function
+            await refreshTypesList();
+        }
+    });
+</script>

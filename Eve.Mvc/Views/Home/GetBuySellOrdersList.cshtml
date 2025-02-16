@@ -1,0 +1,149 @@
+@model Eve.Mvc.Models.GetBuySellOrdersViewModel
+@{
+    @* ViewData["Title"] = "Home Page"; *@
+    var eveUniverseTypesDictionary = await Model.TypesTask;
+}
+
+@* <div class="row">
+    <div class="col-md-2 col-sm-4">
+        <form action="@Url.Action("GetBuySellOrders")">
+            <input type="text" class="form-control" name="typeId" value="@(Model.TypeId == 0 ? "" : Model.TypeId)"
+                placeholder="Type Id">
+            <input type="submit" class="btn btn-primary" value="Submit">
+        </form>
+    </div>
+</div> *@
+
+<br />
+
+<h3>Sell Orders</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <td style="text-align: center;">OrderId</td>
+            <td style="text-align: center;">Price</td>
+            <td style="text-align: center;">TotalValue</td>
+            <td style="text-align: center;">VolumeTotal</td>
+            <td style="text-align: center;">VolumeRemain</td>
+            <td style="text-align: center;">Remaining</td>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int count = 0;
+        }
+        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => !mo.IsBuyOrder).OrderBy(mo => mo.Price))
+        {
+            <tr
+                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
+                @* <td>
+                    @Html.ActionLink(eveUniverseTypesDictionary[marketOrder.TypeId].Name, "GetBuySellOrders", new { typeid = marketOrder.TypeId })&nbsp;
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
+                    </svg>
+                </td> *@
+                <td style="text-align: right;">@marketOrder.OrderId</td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
+                <td style="text-align: right;">@marketOrder.VolumeTotal</td>
+                <td style="text-align: right;">@marketOrder.VolumeRemain</td>
+                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+            </tr>
+            count++;
+        }
+        @if (count > 4)
+        {
+            <tr>
+                <td colspan="6">Load more...</td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+<h3>Buy Orders</h3>
+<table class="table">
+    <thead>
+        <tr>
+            @* <td style="text-align: center;">TypeName</td> *@
+            <td style="text-align: center;">OrderId</td>
+            <td style="text-align: center;">Price</td>
+            <td style="text-align: center;">TotalValue</td>
+            <td style="text-align: center;">VolumeTotal</td>
+            <td style="text-align: center;">VolumeRemain</td>
+            <td style="text-align: center;">Remaining</td>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            count = 0;
+        }
+        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => mo.IsBuyOrder).OrderByDescending(mo =>
+                mo.Price))
+        {
+            <tr
+                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
+                @* <td>
+                    @Html.ActionLink(eveUniverseTypesDictionary[marketOrder.TypeId].Name, "GetBuySellOrders", new { typeid = marketOrder.TypeId })&nbsp;
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-copy" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
+                    </svg>
+                </td> *@
+                <td style="text-align: right;">@marketOrder.OrderId</td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
+                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
+                <td style="text-align: right;">@marketOrder.VolumeTotal</td>
+                <td style="text-align: right;">@marketOrder.VolumeRemain</td>
+                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+            </tr>
+            count++;
+        }
+        @if (count > 4)
+        {
+            <tr>
+                <td colspan="6">Load more...</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@functions {
+    private string HumanReadableTimeSpan(TimeSpan t)
+    {
+        if (t.TotalSeconds <= 1)
+        {
+            return $@"{t:s\.ff} seconds";
+        }
+        if (t.TotalMinutes <= 1)
+        {
+            return $@"{t:%s} seconds";
+        }
+        if (t.TotalHours <= 1)
+        {
+            return $@"{t:%m} minutes";
+        }
+        if (t.TotalDays <= 1)
+        {
+            return $@"{t:%h} hours";
+        }
+
+        return $@"{t:%d} days";
+    }
+
+    private string EveReadableIskValue(decimal d)
+    {
+        if (d > 1000000000) // billion
+        {
+            return (d / 1000000000).ToString("F2") + "b";
+        }
+        if (d > 1000000) // million
+        {
+            return (d / 1000000).ToString("F2") + "m";
+        }
+        if (d > 1000) // thousand
+        {
+            return (d / 1000).ToString("F2") + "k";
+        }
+        return d.ToString("00");
+    }
+}

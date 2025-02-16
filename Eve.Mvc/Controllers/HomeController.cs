@@ -133,12 +133,22 @@ public class HomeController : Controller
         return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback}&state={state}&scope={scopes}");
     }
 
-    public IActionResult Privacy()
+    public async Task<IActionResult> GetBuySellOrders()
     {
-        return View();
+        var model = new TypesListViewModel()
+        {
+            searchFilterModel = new EveUniverseTypeSearchFilterModel(),
+            eveUniverseTypes = await _typeRepository.Search(new EveUniverseTypeSearchFilterModel()),
+        };
+        var typesModel = new TypesViewModel()
+        {
+            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", model),
+        };
+
+        return View(typesModel);
     }
 
-    public async Task<IActionResult> GetBuySellOrders(int typeId)
+    public async Task<IActionResult> GetBuySellOrdersList(int typeId)
     {
         var user = await GetUser();
         if (user == null) return Redirect("/login");
@@ -155,7 +165,7 @@ public class HomeController : Controller
             TypesTask = _typeRepository.GetMarketableTypes(),
             TypeId = typeId,
         };
-        return View(model);
+        return PartialView(model);
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -248,6 +258,8 @@ public class HomeController : Controller
         };
         return PartialView(model);
     }
+
+
 }
 
 public static class ControllerExtensions
