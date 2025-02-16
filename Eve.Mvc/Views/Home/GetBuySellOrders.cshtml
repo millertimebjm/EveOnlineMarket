@@ -26,7 +26,21 @@
 
 <script type="text/javascript">
     async function refreshBuySellOrdersList(event) {
-        console.log("item clicked: " + event.target);
+        console.log("item clicked dataset: " + event.target.dataset.id);
+        let url = "@Url.Action("GetBuySellOrdersList")";
+        url += "?typeId=" + event.target.dataset.id;
+        console.log(url);
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const text = await response.text();
+            document.getElementById("BuySellOrdersList").innerHTML = text;
+        } catch (error) {
+            console.error(error.message);
+        }
     }
 
     async function refreshTypesList() {
@@ -45,9 +59,13 @@
 
             const text = await response.text();
             document.getElementById("TypesList").innerHTML = text;
-            document.getElementByClass("typeLink").onclick = async () => {
-                await refreshBuySellOrdersList();
-            };
+            const links = document.getElementsByClassName("typeLink");
+            for (let i = 0; i < links.length; i++) {
+                links[i].onclick = async (event) => {
+                    await refreshBuySellOrdersList(event);
+                };
+            }
+            console.log("set typeLink events");
         } catch (error) {
             console.error(error.message);
         }

@@ -133,11 +133,6 @@ public class HomeController : Controller
         return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback}&state={state}&scope={scopes}");
     }
 
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
     public async Task<IActionResult> GetBuySellOrders()
     {
         var model = new TypesListViewModel()

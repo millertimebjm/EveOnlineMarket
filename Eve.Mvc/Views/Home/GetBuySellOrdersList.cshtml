@@ -1,10 +1,10 @@
 @model Eve.Mvc.Models.GetBuySellOrdersViewModel
 @{
-    ViewData["Title"] = "Home Page";
+    @* ViewData["Title"] = "Home Page"; *@
     var eveUniverseTypesDictionary = await Model.TypesTask;
 }
 
-<div class="row">
+@* <div class="row">
     <div class="col-md-2 col-sm-4">
         <form action="@Url.Action("GetBuySellOrders")">
             <input type="text" class="form-control" name="typeId" value="@(Model.TypeId == 0 ? "" : Model.TypeId)"
@@ -12,7 +12,7 @@
             <input type="submit" class="btn btn-primary" value="Submit">
         </form>
     </div>
-</div>
+</div> *@
 
 <br />
 
