@@ -1,0 +1,19 @@
+﻿@model Eve.Mvc.Models.PlanetaryInteractionsViewModel
+@{
+    ViewData["Title"] = "Planetary Interactions";
+
+    var planetaryInteractions = await Model.PlanetaryInteractionsTask;
+}
+
+@foreach (var planetaryInteraction in planetaryInteractions) {
+    <span>PlanetId: @planetaryInteraction.Header.planet_id</span>
+    <span>Pin count: @planetaryInteraction.Header.num_pins</span>
+
+    <span>@(string.Join(",", planetaryInteraction.pins.Select(p => $"schematic_id: {p.schematic_id}, ")))</span>
+    <br/>
+    <br/>
+    <br/>
+}
+<br/>
+<br/>
+<br/>

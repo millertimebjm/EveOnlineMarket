@@ -56,6 +56,7 @@ FROM User
 
     public async Task<User> Upsert(User user)
     {
+        await Task.Delay(1);
         throw new NotImplementedException();
 //         using var connection = new SqliteConnection("Data Source=EveOnlineMarket.db");
 //         var sql = @"

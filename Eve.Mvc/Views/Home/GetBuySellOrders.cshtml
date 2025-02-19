@@ -25,10 +25,14 @@
 <input type="hidden" id="take" value="100">
 
 <script type="text/javascript">
-    async function refreshBuySellOrdersList(event) {
+    async function refreshBuySellOrdersListEvent(event) {
         console.log("item clicked dataset: " + event.target.dataset.id);
+        await refreshBuySellOrdersList(event.target.dataset.id);
+    }
+
+    async function refreshBuySellOrdersList(typeId) {
         let url = "@Url.Action("GetBuySellOrdersList")";
-        url += "?typeId=" + event.target.dataset.id;
+        url += "?typeId=" + typeId;
         console.log(url);
         try {
             const response = await fetch(url);
@@ -62,8 +66,11 @@
             const links = document.getElementsByClassName("typeLink");
             for (let i = 0; i < links.length; i++) {
                 links[i].onclick = async (event) => {
-                    await refreshBuySellOrdersList(event);
+                    await refreshBuySellOrdersListEvent(event);
                 };
+            }
+            if (links.length == 1) {
+                await refreshBuySellOrdersList(links[0].dataset.id);
             }
             console.log("set typeLink events");
         } catch (error) {

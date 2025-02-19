@@ -65,7 +65,7 @@ public class EveUniverseType
     // title: get_universe_types_type_id_mass
     // mass number
 
-    public string Name { get; set; }
+    public string Name { get; set; } = "";
     // name*	string
     // title: get_universe_types_type_id_name
     // name string

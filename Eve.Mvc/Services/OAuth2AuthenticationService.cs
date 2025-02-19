@@ -69,6 +69,8 @@ public class OAuth2AuthenticationService : IAuthenticationService
         var httpClient = _httpClientFactory.CreateClient();
         HttpResponseMessage response = await httpClient.SendAsync(message);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<AuthenticationResponseModel>();
+        var authModel = await response.Content.ReadFromJsonAsync<AuthenticationResponseModel>();
+        if (authModel == null) throw new Exception("Authentication Response returned as null");
+        return authModel;
     }
 }

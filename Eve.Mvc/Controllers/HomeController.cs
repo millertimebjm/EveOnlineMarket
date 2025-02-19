@@ -12,6 +12,7 @@ using System.Net.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Azure;
 
 namespace EveOnlineMarket.Controllers;
 
@@ -44,7 +45,7 @@ public class HomeController : Controller
         _httpClientFactory = httpClientFactory;
     }
 
-    private async Task<User> GetUser()
+    private async Task<User?> GetUser()
     {
         var userIdString = HttpContext.Session.GetString(SessionUserId);
         if (string.IsNullOrEmpty(userIdString))
@@ -77,6 +78,7 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         var user = await GetUser();
+        //if (DateTime.UtcNow > user.TokenExpirationDate) await RefreshToken(user);
         if (user == null) return Redirect("/login");
 
         var model = new IndexModel
@@ -129,7 +131,7 @@ public class HomeController : Controller
         if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(callback));
 
         var state = HttpUtility.UrlEncode(Guid.NewGuid().ToString());
-        var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1");
+        var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1 esi-planets.manage_planets.v1 esi-planets.read_customs_offices.v1");
         return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback}&state={state}&scope={scopes}");
     }
 
@@ -162,8 +164,7 @@ public class HomeController : Controller
             UserOrderIdsTask = _eveApiService.GetMarketOrderIds(
                 user.UserId,
                 user.AccessToken),
-            TypesTask = _typeRepository.GetMarketableTypes(),
-            TypeId = typeId,
+            TypesTask = _typeRepository.Get(typeId),
         };
         return PartialView(model);
     }
@@ -259,7 +260,16 @@ public class HomeController : Controller
         return PartialView(model);
     }
 
+    public async Task<IActionResult> PlanetaryInteractions()
+    {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
 
+        var model = new PlanetaryInteractionsViewModel() {
+            PlanetaryInteractionsTask = _eveApiService.GetPlanetaryInteractions(user.UserId, user.AccessToken),
+        };
+        return View(model);
+    }
 }
 
 public static class ControllerExtensions
@@ -279,6 +289,7 @@ public static class ControllerExtensions
             var viewEngine = controller.HttpContext.RequestServices
                 .GetService<ICompositeViewEngine>() as ICompositeViewEngine;
 
+            if (viewEngine == null) throw new Exception("viewEngine is null");
             var viewResult = viewEngine.FindView(controller.ControllerContext, viewName, false);
 
             if (!viewResult.Success)

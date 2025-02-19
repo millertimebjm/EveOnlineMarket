@@ -14,7 +14,6 @@
     @Html.Raw(await Model.TypesListTask)
 </div>
 
-
 <input type="hidden" id="skip" value="0">
 <input type="hidden" id="take" value="100">
 
@@ -35,6 +34,13 @@
 
             const text = await response.text();
             document.getElementById("TypesList").innerHTML = text;
+
+            console.log("checking typeLink");
+            const links = document.getElementsByClassName("typeLink");
+            console.log("typeLink(s) found: " + links.length);
+            if (links.length == 1) {
+                await refreshBuySellOrdersList(event);
+            }
         } catch (error) {
             console.error(error.message);
         }

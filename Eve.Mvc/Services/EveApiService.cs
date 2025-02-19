@@ -28,6 +28,7 @@ public class EveApiService : IEveApi
             {
                 PropertyNameCaseInsensitive = true
             });
+        if (eveMarketOrders == null) throw new Exception("eveMarketOrders response from Eve Online API is null");
         return eveMarketOrders;
     }
 
@@ -60,6 +61,7 @@ public class EveApiService : IEveApi
             {
                 PropertyNameCaseInsensitive = true
             });
+        if (type == null) throw new Exception("type response from Eve Online API is null");
         return type;
     }
 
@@ -84,6 +86,7 @@ public class EveApiService : IEveApi
                 {
                     PropertyNameCaseInsensitive = true
                 });
+            if (typeIds == null) throw new Exception("planetInteraction response from Eve Online API is null");
             foreach (var typeId in typeIds)
             {
                 Console.WriteLine($"found a typeid: {typeId}");
@@ -100,8 +103,9 @@ public class EveApiService : IEveApi
         client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
         var response = await client.GetAsync(new Uri($"https://login.eveonline.com/oauth/verify"));
         response.EnsureSuccessStatusCode();
-        var responseDynamic = await response.Content.ReadFromJsonAsync<EveCharacterResponse>();
-        return responseDynamic.CharacterId;
+        var character = await response.Content.ReadFromJsonAsync<EveCharacterResponse>();
+        if (character == null) throw new Exception("character response from Eve Online API is null");
+        return character.CharacterId;
     }
 
     public async Task<List<EveMarketOrder>> GetBuySellOrders(int typeId, string accessToken)
@@ -116,6 +120,8 @@ public class EveApiService : IEveApi
             {
                 PropertyNameCaseInsensitive = true
             });
+        if (buySellOrders == null) throw new Exception("buySellOrders response from Eve Online API is null");
+
         return buySellOrders;
 
         //         base_url = "https://api.evemarketer.com/ec/marketstat"
@@ -124,5 +130,41 @@ public class EveApiService : IEveApi
         //     'regionlimit': 10000002,  # The Forge region ID
         //     'usesystem': 30000142     # Jita system ID
         // }
+    }
+
+    public async Task<List<PlanetaryInteractionsModel>> GetPlanetaryInteractions(long characterId, string accessToken)
+    {
+        var client = _httpClientFactory.CreateClient();
+        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/?datasource=tranquility&token={accessToken}"));
+        response.EnsureSuccessStatusCode();
+        var headers = JsonSerializer.Deserialize<List<PlanetaryInteractionHeaderModel>>(
+            await response.Content.ReadAsStringAsync(),
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        if (headers == null) throw new Exception("planetInteraction response from Eve Online API is null");
+        var planetInteractions = new List<PlanetaryInteractionsModel>();
+        foreach (var header in headers) 
+        {
+            response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/{header.planet_id}?datasource=tranquility&token={accessToken}"));
+            response.EnsureSuccessStatusCode();
+            var planetInteraction = JsonSerializer.Deserialize<PlanetaryInteractionsModel>(
+                await response.Content.ReadAsStringAsync(),
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            if (planetInteraction == null) throw new Exception("planetInteraction response from Eve Online API is null");
+            planetInteraction.Header = header;
+            planetInteractions.Add(planetInteraction);
+        }
+        return planetInteractions;
+    }
+
+    public async Task<PlanetModel> GetPlanet(int planetId, string accessToken)
+    {
+        await Task.Delay(1);
+        throw new NotImplementedException();
     }
 }

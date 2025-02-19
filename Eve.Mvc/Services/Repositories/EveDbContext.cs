@@ -43,13 +43,6 @@ namespace Eve.Mvc.Services.Repositories
                 .Entity<User>()
                 .ToTable("User")
                 .HasKey(u => u.UserId);
-
-            try
-            {
-                var databaseCreator = (Database.GetService<IDatabaseCreator>() as RelationalDatabaseCreator);
-                databaseCreator.CreateTables();
-            }
-            catch { }
         }
 
         public DbSet<EveMarketOrder> MarketOrders { get; set; }
