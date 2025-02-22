@@ -24,9 +24,9 @@ public class Content
 
     public class Link
     {
-        public int destination_pin_id { get; set; }
+        public long destination_pin_id { get; set; }
         public int link_level { get; set; }
-        public int source_pin_id { get; set; }
+        public long source_pin_id { get; set; }
     }
 
     public class Pin
@@ -35,7 +35,7 @@ public class Content
         public DateTime last_cycle_start { get; set; }
         public double latitude { get; set; }
         public double longitude { get; set; }
-        public int pin_id { get; set; }
+        public long pin_id { get; set; }
         public int schematic_id { get; set; }
         public int type_id { get; set; }
         public DateTime? expiry_time { get; set; }
@@ -54,9 +54,9 @@ public class Content
     public class Route
     {
         public int content_type_id { get; set; }
-        public int destination_pin_id { get; set; }
+        public long destination_pin_id { get; set; }
         public double quantity { get; set; }
         public int route_id { get; set; }
-        public int source_pin_id { get; set; }
+        public long source_pin_id { get; set; }
         public List<object>? waypoints { get; set; }
     }

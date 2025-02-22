@@ -99,15 +99,10 @@ public class HomeController : Controller
         string accessToken)
     {
         Dictionary<int, EveUniverseType> types = new();
-        List<Task<EveUniverseType>> typeTasks = new();
+        List<EveUniverseType> typeTasks = new();
         foreach (var typeId in (await marketOrders).Select(mo => mo.TypeId).Distinct())
         {
-            typeTasks.Add(GetType(typeId, accessToken));
-        }
-        await Task.WhenAll(typeTasks);
-        foreach (var typeTask in typeTasks)
-        {
-            types.Add(typeTask.Result.TypeId, typeTask.Result);
+            types.Add(typeId, await GetType(typeId, accessToken));
         }
         return types;
     }
@@ -192,6 +187,7 @@ public class HomeController : Controller
             user.AuthorizationCode,
             clientId,
             clientSecret);
+        if (authenticationResponseModel == null) throw new Exception();
         user.AccessToken = authenticationResponseModel.AccessToken;
         user.BearerToken = authenticationResponseModel.RefreshToken;
         user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
