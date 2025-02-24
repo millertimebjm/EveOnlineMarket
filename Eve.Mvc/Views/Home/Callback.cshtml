@@ -1,4 +1,4 @@
-﻿@model Eve.Mvc.Models.User
+﻿@model Eve.Models.Users.User
 @{
     ViewData["Title"] = "Home Page";
 }
@@ -15,7 +15,7 @@
     <br />
     @Model.UserId
     <br />
-    @Model.TokenGrantedDateTime.Value.ToLocalTime().ToLongDateString() @Model.TokenGrantedDateTime.Value.ToLocalTime().ToLongTimeString()
+    @Model.TokenGrantedDateTime.ToLocalTime().ToLongDateString() @Model.TokenGrantedDateTime.ToLocalTime().ToLongTimeString()
     <br />
     @DateTime.Now.ToLongDateString() @DateTime.Now.ToLongTimeString()
 </div>

@@ -1,8 +1,10 @@
+using Eve.Models.EveApi;
+using Eve.Models;
 
 namespace Eve.Mvc.Models;
 
 public class TypesListViewModel
 {
-    public EveUniverseTypeSearchFilterModel searchFilterModel { get; set; } = new EveUniverseTypeSearchFilterModel();
-    public List<EveUniverseType> eveUniverseTypes { get; set; } = new List<EveUniverseType>();
+    public TypeSearchFilterModel SearchFilterModel { get; set; } = new TypeSearchFilterModel();
+    public List<EveType> EveTypes { get; set; } = new List<EveType>();
 }

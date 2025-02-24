@@ -1,11 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using EveOnlineMarket.Models;
-using Eve.Mvc.Services.Interfaces;
 using System.Web;
 using Eve.Mvc.Models;
-using EveOnlineMarket.Eve.Mvc.Services.Interfaces;
-using EveOnlineMarket.Eve.Mvc.Services;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Net.Http;
@@ -13,6 +10,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Azure;
+using Eve.Services.Interfaces.Authentications;
+using Eve.Repositories.Interfaces.Users;
+using Eve.Services.Interfaces.EveApi;
+using Eve.Repositories.Interfaces.Types;
+using Eve.Configurations.Interfaces;
+using Eve.Models.Users;
+using Eve.Models.EveApi;
+using Eve.Models;
+using Eve.Configurations;
 
 namespace EveOnlineMarket.Controllers;
 
@@ -23,7 +29,7 @@ public class HomeController : Controller
     private readonly IUserRepository _userRepository;
     private readonly IEveApi _eveApiService;
     private const string SessionUserId = "_UserId";
-    private readonly IEveOnlineMarketConfiguration _configuration;
+    private readonly EveOnlineMarketConfigurationService _configuration;
     private readonly ITypeRepository _typeRepository;
     private readonly IHttpClientFactory _httpClientFactory;
 
@@ -81,7 +87,7 @@ public class HomeController : Controller
         //if (DateTime.UtcNow > user.TokenExpirationDate) await RefreshToken(user);
         if (user == null) return Redirect("/login");
 
-        var model = new IndexModel
+        var model = new IndexViewModel
         {
             User = user,
         };
@@ -94,12 +100,12 @@ public class HomeController : Controller
         return View(model);
     }
 
-    private async Task<Dictionary<int, EveUniverseType>> GetTypes(
-        Task<List<EveMarketOrder>> marketOrders,
+    private async Task<Dictionary<int, EveType>> GetTypes(
+        Task<List<Order>> marketOrders,
         string accessToken)
     {
-        Dictionary<int, EveUniverseType> types = new();
-        List<EveUniverseType> typeTasks = new();
+        Dictionary<int, EveType> types = new();
+        List<EveType> typeTasks = new();
         foreach (var typeId in (await marketOrders).Select(mo => mo.TypeId).Distinct())
         {
             types.Add(typeId, await GetType(typeId, accessToken));
@@ -107,11 +113,11 @@ public class HomeController : Controller
         return types;
     }
 
-    private async Task<EveUniverseType> GetType(int typeId, string accessToken)
+    private async Task<EveType> GetType(int typeId, string accessToken)
     {
         var type = await _typeRepository.Get(typeId);
         if (type != null) return type;
-        type = await _eveApiService.GetUniverseType(typeId, accessToken);
+        type = await _eveApiService.GetEveType(typeId, accessToken);
         type = await _typeRepository.Upsert(type);
         return type;
     }
@@ -134,8 +140,8 @@ public class HomeController : Controller
     {
         var model = new TypesListViewModel()
         {
-            searchFilterModel = new EveUniverseTypeSearchFilterModel(),
-            eveUniverseTypes = await _typeRepository.Search(new EveUniverseTypeSearchFilterModel()),
+            SearchFilterModel = new TypeSearchFilterModel(),
+            EveTypes = await _typeRepository.Search(new TypeSearchFilterModel()),
         };
         var typesModel = new TypesViewModel()
         {
@@ -211,7 +217,7 @@ public class HomeController : Controller
         var client = _httpClientFactory.CreateClient();
         var databaseTypes = await _typeRepository.GetAll();
         var databaseTypesHashSet = databaseTypes.Select(t => t.TypeId).ToHashSet();
-        await foreach (var typeId in _eveApiService.GetUniverseTypeIds(user.AccessToken))
+        await foreach (var typeId in _eveApiService.GetEveTypeIds(user.AccessToken))
         {
             //var type = await _typeRepository.Get(typeId);
             var databaseType = databaseTypesHashSet.SingleOrDefault(t => t == typeId);
@@ -219,7 +225,7 @@ public class HomeController : Controller
             await Task.Delay(100);
             try
             {
-                var type = await _eveApiService.GetUniverseType(typeId, user.AccessToken);
+                var type = await _eveApiService.GetEveType(typeId, user.AccessToken);
                 await _typeRepository.Upsert(type);
             }
             catch
@@ -236,8 +242,8 @@ public class HomeController : Controller
     {
         var model = new TypesListViewModel()
         {
-            searchFilterModel = new EveUniverseTypeSearchFilterModel(),
-            eveUniverseTypes = await _typeRepository.Search(new EveUniverseTypeSearchFilterModel()),
+            SearchFilterModel = new TypeSearchFilterModel(),
+            EveTypes = await _typeRepository.Search(new TypeSearchFilterModel()),
         };
         var typesModel = new TypesViewModel()
         {
@@ -246,12 +252,12 @@ public class HomeController : Controller
         return View(typesModel);
     }
 
-    public async Task<IActionResult> TypesList(EveUniverseTypeSearchFilterModel searchFilterModel)
+    public async Task<IActionResult> TypesList(TypeSearchFilterModel searchFilterModel)
     {
         var model = new TypesListViewModel()
         {
-            searchFilterModel = searchFilterModel,
-            eveUniverseTypes = await _typeRepository.Search(searchFilterModel),
+            SearchFilterModel = searchFilterModel,
+            EveTypes = await _typeRepository.Search(searchFilterModel),
         };
         return PartialView(model);
     }
@@ -261,8 +267,10 @@ public class HomeController : Controller
         var user = await GetUser();
         if (user == null) return Redirect("/login");
 
+        var planetaryInteractionsTask = _eveApiService.GetPlanetaryInteractions(user.UserId, user.AccessToken);
         var model = new PlanetaryInteractionsViewModel() {
-            PlanetaryInteractionsTask = _eveApiService.GetPlanetaryInteractions(user.UserId, user.AccessToken),
+            PlanetaryInteractionsTask = planetaryInteractionsTask,
+            PlanetsTask = _eveApiService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header.planet_id).ToList(), user.AccessToken),
         };
         return View(model);
     }

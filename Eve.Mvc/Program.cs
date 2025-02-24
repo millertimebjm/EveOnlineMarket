@@ -1,8 +1,15 @@
-using Eve.Mvc.Services;
-using Eve.Mvc.Services.Memory;
-using Eve.Mvc.Services.Interfaces;
-using EveOnlineMarket.Eve.Mvc.Services;
-using Eve.Mvc.Services.Repositories;
+using Eve.Services.Interfaces.Authentications;
+using Eve.Services.Authentications;
+using Eve.Repositories.Interfaces.Users;
+using Eve.Repositories.Users;
+using Eve.Services.Interfaces.EveApi;
+using Eve.Services.EveApi;
+using Eve.Repositories.Context;
+using Eve.Repositories.Interfaces.Types;
+using Eve.Repositories.Types;
+using Eve.Configurations;
+using Eve.Repositories.Interfaces.Planets;
+using Eve.Repositories.Planets;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -37,6 +44,17 @@ builder.Services.AddScoped<IUserRepository, PostgresUserRepository>();
 builder.Services.AddScoped<IEveApi, EveApiService>();
 builder.Services.AddSingleton(builder.Configuration);
 builder.Services.AddDbContext<EveDbContext>();
+builder.Services.AddScoped<IPlanetRepository, PostgresPlanetRepository>();
+
+// protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+//     {
+//         Console.WriteLine(_configuration.GetConnectionString());
+//         optionsBuilder
+//             .UseNpgsql(_configuration.GetConnectionString())
+//             .EnableSensitiveDataLogging()
+//             .LogTo(Console.WriteLine, LogLevel.Information);
+//     }
+
 builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()

@@ -1,10 +1,12 @@
-namespace Eve.Mvc.Models
+using Eve.Models.EveApi;
+using Eve.Models.Users;
+
+namespace Eve.Mvc.Models;
+
+public class GetBuySellOrdersViewModel
 {
-    public class GetBuySellOrdersViewModel
-    {
-        public User? User { get; set; }
-        public Task<List<EveMarketOrder>>? MarketOrdersTask { get; set; }
-        public Task<List<long>>? UserOrderIdsTask { get; set; }
-        public Task<EveUniverseType?>? TypesTask { get; set; }
-    }
+    public User User { get; set; } = new User();
+    public Task<List<Order>>? MarketOrdersTask { get; set; }
+    public Task<List<long>>? UserOrderIdsTask { get; set; }
+    public Task<EveType?>? TypesTask { get; set; }
 }
