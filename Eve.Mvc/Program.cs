@@ -10,6 +10,7 @@ using Eve.Repositories.Types;
 using Eve.Configurations;
 using Eve.Repositories.Interfaces.Planets;
 using Eve.Repositories.Planets;
+using Microsoft.EntityFrameworkCore;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -35,6 +36,12 @@ builder.Configuration
     .AddEnvironmentVariables()
     .AddAzureAppConfiguration(appConfigConnectionString)
     .Build();
+ 
+var connectionString = builder.Configuration
+    .GetValue(typeof(string), "EveOnlineMarket:ConnectionString")?
+    .ToString();
+Console.WriteLine($"Connection String: {connectionString}");
+if (connectionString == null) throw new ArgumentNullException(nameof(connectionString));
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -43,7 +50,10 @@ builder.Services.AddScoped<IAuthenticationService, OAuth2AuthenticationService>(
 builder.Services.AddScoped<IUserRepository, PostgresUserRepository>();
 builder.Services.AddScoped<IEveApi, EveApiService>();
 builder.Services.AddSingleton(builder.Configuration);
-builder.Services.AddDbContext<EveDbContext>();
+builder.Services.AddDbContext<EveDbContext>(opts => 
+    opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
+        .EnableSensitiveDataLogging()
+        .LogTo(Console.WriteLine, LogLevel.Information));
 builder.Services.AddScoped<IPlanetRepository, PostgresPlanetRepository>();
 
 // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

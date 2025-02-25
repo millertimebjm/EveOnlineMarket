@@ -23,14 +23,14 @@ public class EveDbContext : DbContext
         _configuration = optionsSnapshot.Value;
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        Console.WriteLine(_configuration.GetConnectionString());
-        optionsBuilder
-            .UseNpgsql(_configuration.GetConnectionString())
-            .EnableSensitiveDataLogging()
-            .LogTo(Console.WriteLine, LogLevel.Information);
-    }
+    // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // {
+    //     Console.WriteLine(_configuration.GetConnectionString());
+    //     optionsBuilder
+    //         .UseNpgsql(_configuration.GetConnectionString())
+    //         .EnableSensitiveDataLogging()
+    //         .LogTo(Console.WriteLine, LogLevel.Information);
+    // }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
