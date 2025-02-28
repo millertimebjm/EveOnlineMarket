@@ -130,6 +130,7 @@ public class HomeController : Controller
 
         var callback = _configuration.GetCallbackUrl();
         if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(callback));
+        Console.WriteLine(callback);
 
         var state = HttpUtility.UrlEncode(Guid.NewGuid().ToString());
         var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1 esi-planets.manage_planets.v1 esi-planets.read_customs_offices.v1");

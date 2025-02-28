@@ -5,28 +5,28 @@ using Eve.Models.EveApi;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Http;
 using Eve.Repositories.Interfaces.Planets;
+using Eve.Services.Interfaces.Wrappers;
 
 namespace Eve.Services.EveApi;
 
 public class EveApiService : IEveApi
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientWrapper _httpClientWrapper;
     private readonly ConcurrentDictionary<int, EveType> _typeCache;
     private readonly IPlanetRepository _planetRepository;
 
     public EveApiService(
-        IHttpClientFactory httpClientFactory,
+        IHttpClientWrapper httpClientWrapper,
         IPlanetRepository planetRepository)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClientWrapper = httpClientWrapper;
         _typeCache = new();
         _planetRepository = planetRepository;
     }
 
     public async Task<List<Order>> GetMarketOrders(long userId, string accessToken)
     {
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{userId}/orders/?datasource=tranquility&token={accessToken}"));
+        var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{userId}/orders/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var orders = JsonSerializer.Deserialize<List<Order>>(
             await response.Content.ReadAsStringAsync(),
@@ -50,16 +50,15 @@ public class EveApiService : IEveApi
     {
         if (_typeCache.TryGetValue(typeId, out var value)) return value;
 
-        var client = _httpClientFactory.CreateClient();
-        return await GetEveType(typeId, accessToken, client);
+        return await GetEveType(typeId, accessToken, _httpClientWrapper);
     }
 
     public async Task<EveType> GetEveType(
         int typeId,
         string accessToken,
-        HttpClient client)
+        IHttpClientWrapper clientWrapper)
     {
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/{typeId}/?datasource=tranquility&token={accessToken}"));
+        var response = await clientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/{typeId}/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var type = JsonSerializer.Deserialize<EveType>(
             await response.Content.ReadAsStringAsync(),
@@ -77,8 +76,7 @@ public class EveApiService : IEveApi
         var typeIds = new List<int>();
         do
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/?datasource=tranquility&token={accessToken}&page={page}"));
+            var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/types/?datasource=tranquility&token={accessToken}&page={page}"));
             if ((int)response.StatusCode == 420)
             {
                 await Task.Delay(60 * 1000);
@@ -105,9 +103,8 @@ public class EveApiService : IEveApi
 
     public async Task<int> GetCharacterId(string accessToken)
     {
-        var client = _httpClientFactory.CreateClient();
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
-        var response = await client.GetAsync(new Uri($"https://login.eveonline.com/oauth/verify"));
+        _httpClientWrapper.AddDefaultRequestHeaders("Authorization", $"Bearer {accessToken}");
+        var response = await _httpClientWrapper.GetAsync(new Uri($"https://login.eveonline.com/oauth/verify"));
         response.EnsureSuccessStatusCode();
         var character = await response.Content.ReadFromJsonAsync<Character>();
         if (character == null) throw new Exception("character response from Eve Online API is null");
@@ -117,8 +114,7 @@ public class EveApiService : IEveApi
     public async Task<List<Order>> GetBuySellOrders(int typeId, string accessToken)
     {
         int regionId = 10000002;
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));
+        var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/markets/{regionId}/orders?datasource=tranquility&token={accessToken}&type_id={typeId}"));
         response.EnsureSuccessStatusCode();
         var buySellOrders = JsonSerializer.Deserialize<List<Order>>(
             await response.Content.ReadAsStringAsync(),
@@ -140,8 +136,7 @@ public class EveApiService : IEveApi
 
     public async Task<List<PlanetaryInteraction>> GetPlanetaryInteractions(long characterId, string accessToken)
     {
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/?datasource=tranquility&token={accessToken}"));
+        var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var headers = JsonSerializer.Deserialize<List<PlanetaryInteractionHeader>>(
             await response.Content.ReadAsStringAsync(),
@@ -150,10 +145,13 @@ public class EveApiService : IEveApi
                 PropertyNameCaseInsensitive = true
             });
         if (headers == null) throw new Exception("planetInteraction response from Eve Online API is null");
-        var planetInteractions = new List<PlanetaryInteraction>();
-        foreach (var header in headers) 
-        {
-            response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/{header.planet_id}?datasource=tranquility&token={accessToken}"));
+        var planetInteractions = new ConcurrentBag<PlanetaryInteraction>();
+        
+        var options = new ParallelOptions() {
+            MaxDegreeOfParallelism = 5,
+        };
+        await Parallel.ForEachAsync(headers, options, async (header, _) => {
+            response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/{header.planet_id}?datasource=tranquility&token={accessToken}"));
             response.EnsureSuccessStatusCode();
             var planetInteraction = JsonSerializer.Deserialize<PlanetaryInteraction>(
                 await response.Content.ReadAsStringAsync(),
@@ -164,8 +162,22 @@ public class EveApiService : IEveApi
             if (planetInteraction == null) throw new Exception("planetInteraction response from Eve Online API is null");
             planetInteraction.Header = header;
             planetInteractions.Add(planetInteraction);
-        }
-        return planetInteractions;
+        });
+        // foreach (var header in headers) 
+        // {
+        //     response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/characters/{characterId}/planets/{header.planet_id}?datasource=tranquility&token={accessToken}"));
+        //     response.EnsureSuccessStatusCode();
+        //     var planetInteraction = JsonSerializer.Deserialize<PlanetaryInteraction>(
+        //         await response.Content.ReadAsStringAsync(),
+        //         new JsonSerializerOptions
+        //         {
+        //             PropertyNameCaseInsensitive = true
+        //         });
+        //     if (planetInteraction == null) throw new Exception("planetInteraction response from Eve Online API is null");
+        //     planetInteraction.Header = header;
+        //     planetInteractions.Add(planetInteraction);
+        // }
+        return planetInteractions.ToList();
     }
 
     public async Task<Planet> GetPlanet(int planetId, string accessToken)
@@ -173,8 +185,7 @@ public class EveApiService : IEveApi
         var planetRepository = await _planetRepository.Get(planetId);
         if (planetRepository is not null) return planetRepository;
 
-        var client = _httpClientFactory.CreateClient();
-        var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/planets/{planetId}/?datasource=tranquility&token={accessToken}"));
+        var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/planets/{planetId}/?datasource=tranquility&token={accessToken}"));
         response.EnsureSuccessStatusCode();
         var planet = JsonSerializer.Deserialize<Planet>(
             await response.Content.ReadAsStringAsync(),
@@ -190,8 +201,8 @@ public class EveApiService : IEveApi
 
     public async Task<List<Planet>> GetPlanets(List<int> planetIds, string accessToken)
     {
-        var planets = new List<Planet>();
-
+        var planets = new ConcurrentBag<Planet>();
+        var planetIdsToPullFromApi = new List<int>();
         var planetsRepository = await _planetRepository.GetMany(planetIds);
         foreach (var planetId in planetIds)
         {
@@ -201,11 +212,16 @@ public class EveApiService : IEveApi
                 planets.Add(planet);
                 continue;
             }
+            planetIdsToPullFromApi.Add(planetId);
+        }
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/planets/{planetId}/?datasource=tranquility&token={accessToken}"));
+        var options = new ParallelOptions() {
+            MaxDegreeOfParallelism = 5,
+        };
+        await Parallel.ForEachAsync(planetIdsToPullFromApi, options, async (planetId, _) => {
+            var response = await _httpClientWrapper.GetAsync(new Uri($"https://esi.evetech.net/latest/universe/planets/{planetId}/?datasource=tranquility&token={accessToken}"));
             response.EnsureSuccessStatusCode();
-            planet = JsonSerializer.Deserialize<Planet>(
+            var planet = JsonSerializer.Deserialize<Planet>(
                 await response.Content.ReadAsStringAsync(),
                 new JsonSerializerOptions
                 {
@@ -215,8 +231,8 @@ public class EveApiService : IEveApi
 
             await _planetRepository.Upsert(planet);
             planets.Add(planet);
-        }
+        });
 
-        return planets;
+        return planets.ToList();
     }
 }

@@ -11,6 +11,8 @@ using Eve.Configurations;
 using Eve.Repositories.Interfaces.Planets;
 using Eve.Repositories.Planets;
 using Microsoft.EntityFrameworkCore;
+using Eve.Services.Interfaces.Wrappers;
+using Eve.Services.Wrappers;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -55,6 +57,7 @@ builder.Services.AddDbContext<EveDbContext>(opts =>
         .EnableSensitiveDataLogging()
         .LogTo(Console.WriteLine, LogLevel.Information));
 builder.Services.AddScoped<IPlanetRepository, PostgresPlanetRepository>();
+builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
 
 // protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 //     {
