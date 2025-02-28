@@ -1,3 +1,4 @@
+@using Eve.Models.EveApi
 @model Eve.Mvc.Models.GetBuySellOrdersViewModel
 @{
     var eveUniverseTypesDictionary = await Model.TypesTask;
@@ -22,11 +23,21 @@
     <tbody>
         @{
             int count = 0;
+            int capsuleerOrderCountCurrent = 0;
+            var marketOrders = Model.MarketOrdersTask is null 
+                ? new List<Order>() 
+                : await Model.MarketOrdersTask;
+            var userOrderIds = Model.UserOrderIdsTask is null
+                ? new List<long>()
+                : await Model.UserOrderIdsTask;
+            var capsuleerOrderCountTotal = marketOrders.Count(mo => userOrderIds.Contains(mo.OrderId));
         }
-        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => !mo.IsBuyOrder).OrderBy(mo => mo.Price))
+        @foreach (var marketOrder in marketOrders
+            .Where(mo => !mo.IsBuyOrder)
+            .OrderBy(mo => mo.Price))
         {
             <tr
-                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
+                class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 && capsuleerOrderCountTotal == capsuleerOrderCountCurrent ? "d-none" : "")">
                 <td style="text-align: right;">@marketOrder.OrderId</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
@@ -35,6 +46,7 @@
                 <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
             </tr>
             count++;
+            if (userOrderIds.Contains(marketOrder.OrderId)) capsuleerOrderCountCurrent++;
         }
         @if (count > 4)
         {
@@ -62,11 +74,11 @@
         @{
             count = 0;
         }
-        @foreach (var marketOrder in (await Model.MarketOrdersTask).Where(mo => mo.IsBuyOrder).OrderByDescending(mo =>
+        @foreach (var marketOrder in marketOrders.Where(mo => mo.IsBuyOrder).OrderByDescending(mo =>
                 mo.Price))
         {
             <tr
-                class="@((await Model.UserOrderIdsTask).Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
+                class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
                 <td style="text-align: right;">@marketOrder.OrderId</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>

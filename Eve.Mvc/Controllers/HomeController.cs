@@ -127,8 +127,8 @@ public class HomeController : BaseController
         };
         var typesModel = new TypesViewModel()
         {
-            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", model),
-
+            TypesListPartialTask = this.RenderPartialViewToStringAsync("TypesList", model),
+            EveTypes = eveTypes,
         };
 
         return View(typesModel);
@@ -201,7 +201,7 @@ public class HomeController : BaseController
         };
         var typesModel = new TypesViewModel()
         {
-            TypesListTask = this.RenderPartialViewToStringAsync("TypesList", model),
+            TypesListPartialTask = this.RenderPartialViewToStringAsync("TypesList", model),
         };
         return View(typesModel);
     }
