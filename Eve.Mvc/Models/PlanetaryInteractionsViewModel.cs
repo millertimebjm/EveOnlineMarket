@@ -6,4 +6,5 @@ public class PlanetaryInteractionsViewModel
 {
     public Task<List<PlanetaryInteraction>>? PlanetaryInteractionsTask { get; set; }
     public Task<List<Planet>>? PlanetsTask { get; set; }
+    public Task<List<Type>>? TypesTask { get; set; }
 }

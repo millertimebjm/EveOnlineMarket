@@ -5,30 +5,27 @@ using System.Web;
 using Eve.Mvc.Models;
 using Microsoft.Extensions.Options;
 using System.Text;
-using System.Net.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.Extensions.Azure;
 using Eve.Services.Interfaces.Authentications;
 using Eve.Repositories.Interfaces.Users;
 using Eve.Services.Interfaces.EveApi;
 using Eve.Repositories.Interfaces.Types;
-using Eve.Configurations.Interfaces;
 using Eve.Models.Users;
 using Eve.Models.EveApi;
 using Eve.Models;
 using Eve.Configurations;
 
-namespace EveOnlineMarket.Controllers;
+namespace Eve.Mvc.Controllers;
 
-public class HomeController : Controller
+public class HomeController : BaseController
 {
     private readonly ILogger<HomeController> _logger;
     private readonly IAuthenticationService _authenticationService;
     private readonly IUserRepository _userRepository;
     private readonly IEveApi _eveApiService;
-    private const string SessionUserId = "_UserId";
+    
     private readonly EveOnlineMarketConfigurationService _configuration;
     private readonly ITypeRepository _typeRepository;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -40,7 +37,11 @@ public class HomeController : Controller
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         ILogger<HomeController> logger,
         ITypeRepository typeRepository,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory) : base(
+            eveApiService,
+            userRepository,
+            options,
+            authenticationService)
     {
         _authenticationService = authenticationService;
         _userRepository = userRepository;
@@ -51,35 +52,7 @@ public class HomeController : Controller
         _httpClientFactory = httpClientFactory;
     }
 
-    private async Task<User?> GetUser()
-    {
-        var userIdString = HttpContext.Session.GetString(SessionUserId);
-        if (string.IsNullOrEmpty(userIdString))
-        {
-            return null;
-        }
-        var user = await _userRepository.Get(long.Parse(userIdString));
-        if (user == null) throw new Exception("");
-
-        if (DateTime.UtcNow > user.TokenExpirationDate)
-        {
-            var clientId = _configuration.GetClientId();
-            if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(clientId));
-
-            var clientSecret = _configuration.GetClientSecret();
-            if (string.IsNullOrEmpty(clientSecret)) throw new ArgumentNullException(nameof(clientSecret));
-            var authenticationResponseModel = await _authenticationService.RefreshAccessToken(
-                clientId,
-                clientSecret,
-                user.BearerToken);
-            user.AccessToken = authenticationResponseModel.AccessToken;
-            user.BearerToken = authenticationResponseModel.RefreshToken;
-            user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
-            user.TokenExpirationDate = authenticationResponseModel.IssuedDate.AddSeconds(authenticationResponseModel.ExpiresIn);
-            await _userRepository.Upsert(user);
-        }
-        return user;
-    }
+    
 
     public async Task<IActionResult> Index()
     {
@@ -134,19 +107,28 @@ public class HomeController : Controller
 
         var state = HttpUtility.UrlEncode(Guid.NewGuid().ToString());
         var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1 esi-planets.manage_planets.v1 esi-planets.read_customs_offices.v1");
-        return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback}&state={state}&scope={scopes}");
+        return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback ?? ""}&state={state}&scope={scopes}");
     }
 
-    public async Task<IActionResult> GetBuySellOrders()
+    [Route("Home/GetBuySellOrders/{typeId?}")]
+    public async Task<IActionResult> GetBuySellOrders(int? typeId)
     {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
+
+        var eveTypes = typeId.HasValue && typeId.Value > 0 
+            ? new List<EveType>{await _eveApiService.GetEveType(typeId.Value, user.AccessToken)}
+            : await _typeRepository.Search(new TypeSearchFilterModel());
+
         var model = new TypesListViewModel()
         {
             SearchFilterModel = new TypeSearchFilterModel(),
-            EveTypes = await _typeRepository.Search(new TypeSearchFilterModel()),
+            EveTypes = eveTypes,
         };
         var typesModel = new TypesViewModel()
         {
             TypesListTask = this.RenderPartialViewToStringAsync("TypesList", model),
+
         };
 
         return View(typesModel);
@@ -210,35 +192,6 @@ public class HomeController : Controller
         return Redirect("/");
     }
 
-    public async Task<IActionResult> RefreshTypes()
-    {
-        var user = await GetUser();
-        if (user == null) return Redirect("/login");
-
-        var client = _httpClientFactory.CreateClient();
-        var databaseTypes = await _typeRepository.GetAll();
-        var databaseTypesHashSet = databaseTypes.Select(t => t.TypeId).ToHashSet();
-        await foreach (var typeId in _eveApiService.GetEveTypeIds(user.AccessToken))
-        {
-            //var type = await _typeRepository.Get(typeId);
-            var databaseType = databaseTypesHashSet.SingleOrDefault(t => t == typeId);
-            if (typeId == 0 || databaseType > 0) continue;
-            await Task.Delay(100);
-            try
-            {
-                var type = await _eveApiService.GetEveType(typeId, user.AccessToken);
-                await _typeRepository.Upsert(type);
-            }
-            catch
-            {
-                await Task.Delay(10 * 1000);
-                continue;
-            }
-        }
-
-        return Accepted();
-    }
-
     public async Task<IActionResult> Types()
     {
         var model = new TypesListViewModel()
@@ -269,9 +222,14 @@ public class HomeController : Controller
         if (user == null) return Redirect("/login");
 
         var planetaryInteractionsTask = _eveApiService.GetPlanetaryInteractions(user.UserId, user.AccessToken);
-        var model = new PlanetaryInteractionsViewModel() {
+        var typesList = new List<int>();
+        typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.type_id)));
+        typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.routes.Select(r => r.content_type_id)));
+        var model = new PlanetaryInteractionsViewModel() 
+        {
             PlanetaryInteractionsTask = planetaryInteractionsTask,
-            PlanetsTask = _eveApiService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header.planet_id).ToList(), user.AccessToken),
+            PlanetsTask = _eveApiService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
+            //TypesTask = _typeRepository.GetMany(typesList),
         };
         return View(model);
     }

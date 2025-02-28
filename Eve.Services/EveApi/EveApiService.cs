@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.Http;
 using Eve.Repositories.Interfaces.Planets;
 using Eve.Services.Interfaces.Wrappers;
+using Eve.Repositories.Interfaces.Types;
 
 namespace Eve.Services.EveApi;
 
@@ -14,14 +15,17 @@ public class EveApiService : IEveApi
     private readonly IHttpClientWrapper _httpClientWrapper;
     private readonly ConcurrentDictionary<int, EveType> _typeCache;
     private readonly IPlanetRepository _planetRepository;
+    private readonly ITypeRepository _typeRepository;
 
     public EveApiService(
         IHttpClientWrapper httpClientWrapper,
-        IPlanetRepository planetRepository)
+        IPlanetRepository planetRepository,
+        ITypeRepository typeRepository)
     {
         _httpClientWrapper = httpClientWrapper;
         _typeCache = new();
         _planetRepository = planetRepository;
+        _typeRepository = typeRepository;
     }
 
     public async Task<List<Order>> GetMarketOrders(long userId, string accessToken)
