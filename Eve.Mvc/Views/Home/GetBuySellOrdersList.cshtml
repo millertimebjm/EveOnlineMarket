@@ -1,10 +1,11 @@
 @using Eve.Models.EveApi
 @model Eve.Mvc.Models.GetBuySellOrdersViewModel
 @{
-    var eveUniverseTypesDictionary = await Model.TypesTask;
+    var eveUniverseTypesDictionary = (await Model.TypesTask) ?? new EveType();
+
 }
 
-<h1>@((await Model.TypesTask).Name)</h1>
+<h1>@(eveUniverseTypesDictionary.Name)</h1>
 
 <br />
 

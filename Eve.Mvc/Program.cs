@@ -15,6 +15,8 @@ using Eve.Services.Interfaces.Wrappers;
 using Eve.Services.Wrappers;
 using Eve.Services.Interfaces.EveApi.RefreshTypes;
 using Eve.Services.EveApi.RefreshServices;
+using Eve.Services.EveApi.EveTypes;
+using Eve.Services.Interfaces.EveApi.EveTypes;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -61,17 +63,7 @@ builder.Services.AddDbContext<EveDbContext>(opts =>
 builder.Services.AddScoped<IPlanetRepository, PostgresPlanetRepository>();
 builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
 builder.Services.AddScoped<IRefreshTypes, RefreshTypesService>();
-
-
-// protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-//     {
-//         Console.WriteLine(_configuration.GetConnectionString());
-//         optionsBuilder
-//             .UseNpgsql(_configuration.GetConnectionString())
-//             .EnableSensitiveDataLogging()
-//             .LogTo(Console.WriteLine, LogLevel.Information);
-//     }
-
+builder.Services.AddScoped<IEveTypeService, EveTypeService>();
 builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()

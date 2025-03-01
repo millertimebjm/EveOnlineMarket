@@ -4,7 +4,6 @@ using EveOnlineMarket.Models;
 using System.Web;
 using Eve.Mvc.Models;
 using Microsoft.Extensions.Options;
-using System.Text;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -16,6 +15,8 @@ using Eve.Models.Users;
 using Eve.Models.EveApi;
 using Eve.Models;
 using Eve.Configurations;
+using Eve.Services.Interfaces.EveApi.EveTypes;
+using Eve.Services.Interfaces.Orders;
 
 namespace Eve.Mvc.Controllers;
 
@@ -25,10 +26,10 @@ public class HomeController : BaseController
     private readonly IAuthenticationService _authenticationService;
     private readonly IUserRepository _userRepository;
     private readonly IEveApi _eveApiService;
-    
     private readonly EveOnlineMarketConfigurationService _configuration;
     private readonly ITypeRepository _typeRepository;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IEveTypeService _eveTypeService;
+    private readonly IOrdersService _ordersService;
 
     public HomeController(
         IAuthenticationService authenticationService,
@@ -37,7 +38,8 @@ public class HomeController : BaseController
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         ILogger<HomeController> logger,
         ITypeRepository typeRepository,
-        IHttpClientFactory httpClientFactory) : base(
+        IEveTypeService eveTypeService,
+        IOrdersService ordersService) : base(
             eveApiService,
             userRepository,
             options,
@@ -49,10 +51,9 @@ public class HomeController : BaseController
         _logger = logger;
         _configuration = options.Value;
         _typeRepository = typeRepository;
-        _httpClientFactory = httpClientFactory;
+        _eveTypeService = eveTypeService;
+        _ordersService = ordersService;
     }
-
-    
 
     public async Task<IActionResult> Index()
     {
@@ -65,7 +66,7 @@ public class HomeController : BaseController
             User = user,
         };
 
-        model.EveMarketOrdersTask = _eveApiService.GetMarketOrders(
+        model.EveMarketOrdersTask = _ordersService.GetMarketOrders(
             model.User.UserId,
             model.User.AccessToken);
 
@@ -90,7 +91,7 @@ public class HomeController : BaseController
     {
         var type = await _typeRepository.Get(typeId);
         if (type != null) return type;
-        type = await _eveApiService.GetEveType(typeId, accessToken);
+        type = await _eveTypeService.GetEveType(typeId, accessToken);
         type = await _typeRepository.Upsert(type);
         return type;
     }
@@ -110,6 +111,13 @@ public class HomeController : BaseController
         return Redirect($"https://login.eveonline.com/v2/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={callback ?? ""}&state={state}&scope={scopes}");
     }
 
+    [Route("logout")]
+    public IActionResult Logout()
+    {
+        HttpContext.Session.SetString(SessionUserId, "");
+        return Redirect("/login");
+    }
+
     [Route("Home/GetBuySellOrders/{typeId?}")]
     public async Task<IActionResult> GetBuySellOrders(int? typeId)
     {
@@ -117,7 +125,7 @@ public class HomeController : BaseController
         if (user == null) return Redirect("/login");
 
         var eveTypes = typeId.HasValue && typeId.Value > 0 
-            ? new List<EveType>{await _eveApiService.GetEveType(typeId.Value, user.AccessToken)}
+            ? new List<EveType>{await _eveTypeService.GetEveType(typeId.Value, user.AccessToken)}
             : await _typeRepository.Search(new TypeSearchFilterModel());
 
         var model = new TypesListViewModel()
@@ -139,13 +147,13 @@ public class HomeController : BaseController
         var user = await GetUser();
         if (user == null) return Redirect("/login");
 
-        var eveMarketOrdersTask = _eveApiService.GetBuySellOrders(typeId, user.AccessToken);
+        var eveMarketOrdersTask = _ordersService.GetBuySellOrders(typeId, user.AccessToken);
 
         var model = new GetBuySellOrdersViewModel()
         {
             User = user,
             MarketOrdersTask = eveMarketOrdersTask,
-            UserOrderIdsTask = _eveApiService.GetMarketOrderIds(
+            UserOrderIdsTask = _ordersService.GetMarketOrderIds(
                 user.UserId,
                 user.AccessToken),
             TypesTask = _typeRepository.Get(typeId),

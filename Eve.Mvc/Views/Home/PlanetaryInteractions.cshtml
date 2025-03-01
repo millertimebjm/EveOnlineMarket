@@ -2,15 +2,16 @@
 @model Eve.Mvc.Models.PlanetaryInteractionsViewModel
 @{
     ViewData["Title"] = "Planetary Interactions";
-
     var planetaryInteractions = await Model.PlanetaryInteractionsTask;
 }
 
-@foreach (var planetaryInteraction in planetaryInteractions) {
-    var planet = (await Model.PlanetsTask).Single(p => p.PlanetId == planetaryInteraction.Header.planet_id);
-    <span>PlanetId: @planetaryInteraction.Header.planet_id</span>
+@foreach (var planetaryInteraction in planetaryInteractions) 
+{
+    var header = planetaryInteraction.Header ?? new Eve.Models.EveApi.PlanetaryInteractionHeader();
+    var planet = (await Model.PlanetsTask).Single(p => p.PlanetId == header.planet_id);
+    <span>PlanetId: @header.planet_id</span>
     <span>PlanetName @planet.Name</span>
-    <span>Pin count: @planetaryInteraction.Header.num_pins</span>
+    <span>Pin count: @header.num_pins</span>
 
     <span>@(string.Join(",", planetaryInteraction.pins.Select(p => $"schematic_id: {p.schematic_id}, ")))</span>
     <br/>
