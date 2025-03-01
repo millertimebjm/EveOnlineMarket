@@ -25,8 +25,12 @@ public class HttpClientWrapper : IHttpClientWrapper
 
     public async Task<IHttpResponseMessageWrapper> GetAsync(Uri uri)
     {
-        
         return new HttpResponseMessageWrapper(await HttpClient.GetAsync(uri));
+    }
+
+    public async Task<IHttpResponseMessageWrapper> SendAsync(HttpRequestMessage message)
+    {
+        return new HttpResponseMessageWrapper(await HttpClient.SendAsync(message));
     }
 
     public void AddDefaultRequestHeaders(string name, string value)

@@ -2,17 +2,18 @@ using System.Net.Http.Json;
 using System.Text;
 using Eve.Models.EveApi;
 using Eve.Services.Interfaces.Authentications;
+using Eve.Services.Interfaces.Wrappers;
 
 namespace Eve.Services.Authentications;
 
 public class OAuth2AuthenticationService : IAuthenticationService
 {
     private const string _eveOnlineApiOauthUrl = "https://login.eveonline.com/v2/oauth/token";
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientWrapper _httpClientWrapper;
     public OAuth2AuthenticationService(
-        IHttpClientFactory httpClientFactory)
+        IHttpClientWrapper httpClientWrapper)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClientWrapper = httpClientWrapper;
     }
     public async Task<Authentication> GetAccessToken(
         string authorizationToken, 
@@ -65,8 +66,7 @@ public class OAuth2AuthenticationService : IAuthenticationService
         var base64AuthString = Base64Encode($"{clientId}:{clientSecret}");
         message.Headers.Add("Authorization",$"Basic {base64AuthString}");
         message.Headers.Add("Host", "login.eveonline.com");
-        var httpClient = _httpClientFactory.CreateClient();
-        HttpResponseMessage response = await httpClient.SendAsync(message);
+        var response = await _httpClientWrapper.SendAsync(message);
         response.EnsureSuccessStatusCode();
         var authModel = await response.Content.ReadFromJsonAsync<Authentication>();
         if (authModel == null) throw new Exception("Authentication Response returned as null");
