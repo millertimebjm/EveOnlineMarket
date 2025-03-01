@@ -17,6 +17,8 @@ using Eve.Services.Interfaces.EveApi.RefreshTypes;
 using Eve.Services.EveApi.RefreshServices;
 using Eve.Services.EveApi.EveTypes;
 using Eve.Services.Interfaces.EveApi.EveTypes;
+using Eve.Services.Interfaces.Orders;
+using Eve.Services.Orders;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -65,6 +67,7 @@ builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
 builder.Services.AddScoped<IRefreshTypes, RefreshTypesService>();
 builder.Services.AddScoped<IEveTypeService, EveTypeService>();
 builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
+builder.Services.AddScoped<IOrdersService, OrdersService>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
     .Configure<IConfiguration>((settings, configuration) =>
