@@ -99,6 +99,5 @@ public class EveTypeServiceTests
             httpClientWrapper);
 
         await Assert.ThrowsAsync<Exception>(async () => await eveTypeService.GetEveType(eveTypeInitial.TypeId, FAKE_ACCESS_TOKEN));
-        
     }
 }

@@ -17,6 +17,7 @@ using Eve.Models;
 using Eve.Configurations;
 using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Orders;
+using Eve.Services.Interfaces.EveApi.Characters;
 
 namespace Eve.Mvc.Controllers;
 
@@ -30,6 +31,7 @@ public class HomeController : BaseController
     private readonly ITypeRepository _typeRepository;
     private readonly IEveTypeService _eveTypeService;
     private readonly IOrdersService _ordersService;
+    private readonly ICharacterService _characterService;
 
     public HomeController(
         IAuthenticationService authenticationService,
@@ -39,7 +41,8 @@ public class HomeController : BaseController
         ILogger<HomeController> logger,
         ITypeRepository typeRepository,
         IEveTypeService eveTypeService,
-        IOrdersService ordersService) : base(
+        IOrdersService ordersService,
+        ICharacterService characterService) : base(
             eveApiService,
             userRepository,
             options,
@@ -53,6 +56,7 @@ public class HomeController : BaseController
         _typeRepository = typeRepository;
         _eveTypeService = eveTypeService;
         _ordersService = ordersService;
+        _characterService = characterService;
     }
 
     public async Task<IActionResult> Index()
@@ -190,7 +194,7 @@ public class HomeController : BaseController
         user.TokenGrantedDateTime = authenticationResponseModel.IssuedDate;
         user.TokenExpirationDate = authenticationResponseModel.IssuedDate.AddSeconds(authenticationResponseModel.ExpiresIn);
 
-        user.UserId = await _eveApiService.GetCharacterId(
+        user.UserId = await _characterService.GetCharacterId(
             user.AccessToken
         );
         HttpContext.Session.SetString(SessionUserId, user.UserId.ToString());

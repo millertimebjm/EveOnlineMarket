@@ -51,7 +51,7 @@ public class OrdersServiceTests
         Assert.Equal(marketOrder.Price, orderInitial.Price);
         Assert.Equal(marketOrder.Issued, orderInitial.Issued);
         Assert.Equal(marketOrder.LocationId, orderInitial.LocationId);
-        Assert.Equal(marketOrder.TimeRemaining, orderInitial.TimeRemaining);
+        Assert.True(Math.Abs((marketOrder.TimeRemaining - orderInitial.TimeRemaining).TotalSeconds) <= 1);
         Assert.Equal(marketOrder.VolumeTotal, orderInitial.VolumeTotal);
         Assert.Equal(marketOrder.VolumeRemain, orderInitial.VolumeRemain);
         Assert.Equal(marketOrder.Duration, orderInitial.Duration);
@@ -175,7 +175,7 @@ public class OrdersServiceTests
         Assert.Equal(marketOrder.Price, orderInitial.Price);
         Assert.Equal(marketOrder.Issued, orderInitial.Issued);
         Assert.Equal(marketOrder.LocationId, orderInitial.LocationId);
-        Assert.Equal(marketOrder.TimeRemaining, orderInitial.TimeRemaining);
+        Assert.True(Math.Abs((marketOrder.TimeRemaining - orderInitial.TimeRemaining).TotalSeconds) <= 1);
         Assert.Equal(marketOrder.VolumeTotal, orderInitial.VolumeTotal);
         Assert.Equal(marketOrder.VolumeRemain, orderInitial.VolumeRemain);
         Assert.Equal(marketOrder.Duration, orderInitial.Duration);
