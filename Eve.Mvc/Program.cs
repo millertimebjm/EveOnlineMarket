@@ -19,6 +19,8 @@ using Eve.Services.EveApi.EveTypes;
 using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Orders;
 using Eve.Services.Orders;
+using Eve.Services.Interfaces.EveApi.Planets;
+using Eve.Services.EveApi.Planets;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -56,7 +58,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAuthenticationService, OAuth2AuthenticationService>();
 builder.Services.AddScoped<IUserRepository, PostgresUserRepository>();
-builder.Services.AddScoped<IEveApi, EveApiService>();
 builder.Services.AddSingleton(builder.Configuration);
 builder.Services.AddDbContext<EveDbContext>(opts => 
     opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
@@ -68,6 +69,7 @@ builder.Services.AddScoped<IRefreshTypes, RefreshTypesService>();
 builder.Services.AddScoped<IEveTypeService, EveTypeService>();
 builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
+builder.Services.AddScoped<IPlanetService, PlanetService>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
     .Configure<IConfiguration>((settings, configuration) =>

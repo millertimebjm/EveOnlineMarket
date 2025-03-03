@@ -18,6 +18,7 @@ using Eve.Configurations;
 using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Orders;
 using Eve.Services.Interfaces.EveApi.Characters;
+using Eve.Services.Interfaces.EveApi.Planets;
 
 namespace Eve.Mvc.Controllers;
 
@@ -26,7 +27,7 @@ public class HomeController : BaseController
     private readonly ILogger<HomeController> _logger;
     private readonly IAuthenticationService _authenticationService;
     private readonly IUserRepository _userRepository;
-    private readonly IEveApi _eveApiService;
+    private readonly IPlanetService _planetService;
     private readonly EveOnlineMarketConfigurationService _configuration;
     private readonly ITypeRepository _typeRepository;
     private readonly IEveTypeService _eveTypeService;
@@ -36,21 +37,20 @@ public class HomeController : BaseController
     public HomeController(
         IAuthenticationService authenticationService,
         IUserRepository userRepository,
-        IEveApi eveApiService,
+        IPlanetService planetService,
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         ILogger<HomeController> logger,
         ITypeRepository typeRepository,
         IEveTypeService eveTypeService,
         IOrdersService ordersService,
         ICharacterService characterService) : base(
-            eveApiService,
             userRepository,
             options,
             authenticationService)
     {
         _authenticationService = authenticationService;
         _userRepository = userRepository;
-        _eveApiService = eveApiService;
+        _planetService = planetService;
         _logger = logger;
         _configuration = options.Value;
         _typeRepository = typeRepository;
@@ -233,14 +233,14 @@ public class HomeController : BaseController
         var user = await GetUser();
         if (user == null) return Redirect("/login");
 
-        var planetaryInteractionsTask = _eveApiService.GetPlanetaryInteractions(user.UserId, user.AccessToken);
+        var planetaryInteractionsTask = _planetService.GetPlanetaryInteractions(user.UserId, user.AccessToken);
         var typesList = new List<int>();
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.type_id)));
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.routes.Select(r => r.content_type_id)));
         var model = new PlanetaryInteractionsViewModel() 
         {
             PlanetaryInteractionsTask = planetaryInteractionsTask,
-            PlanetsTask = _eveApiService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
+            PlanetsTask = _planetService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
             //TypesTask = _typeRepository.GetMany(typesList),
         };
         return View(model);

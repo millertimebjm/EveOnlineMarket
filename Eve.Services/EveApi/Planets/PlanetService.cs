@@ -1,36 +1,24 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Eve.Services.Interfaces.EveApi;
 using Eve.Models.EveApi;
-using System.Net.Http.Json;
-using Microsoft.Extensions.Http;
 using Eve.Repositories.Interfaces.Planets;
+using Eve.Services.Interfaces.EveApi.Planets;
 using Eve.Services.Interfaces.Wrappers;
-using Eve.Repositories.Interfaces.Types;
 
-namespace Eve.Services.EveApi;
+namespace Eve.Services.EveApi.Planets;
 
-public class EveApiService : IEveApi
+public class PlanetService : IPlanetService
 {
     private readonly IHttpClientWrapper _httpClientWrapper;
     private readonly IPlanetRepository _planetRepository;
 
-    public EveApiService(
+    public PlanetService(
         IHttpClientWrapper httpClientWrapper,
-        IPlanetRepository planetRepository)
+        IPlanetRepository planetRepository
+    )
     {
         _httpClientWrapper = httpClientWrapper;
         _planetRepository = planetRepository;
-    }
-  
-    public async Task<int> GetCharacterId(string accessToken)
-    {
-        _httpClientWrapper.AddDefaultRequestHeaders("Authorization", $"Bearer {accessToken}");
-        var response = await _httpClientWrapper.GetAsync(new Uri($"https://login.eveonline.com/oauth/verify"));
-        response.EnsureSuccessStatusCode();
-        var character = await response.Content.ReadFromJsonAsync<Character>();
-        if (character == null) throw new Exception("character response from Eve Online API is null");
-        return character.CharacterId;
     }
 
     public async Task<List<PlanetaryInteraction>> GetPlanetaryInteractions(long characterId, string accessToken)

@@ -13,17 +13,14 @@ public class BaseController : Controller
 {
     protected const string SessionUserId = "_UserId";
     private readonly IUserRepository _userRepository;
-    private readonly IEveApi _eveApiService;
     private readonly EveOnlineMarketConfigurationService _configuration;
     private readonly IAuthenticationService _authenticationService;
 
     public BaseController(
-        IEveApi eveApiService,
         IUserRepository userRepository,
         IOptionsSnapshot<EveOnlineMarketConfigurationService> options,
         IAuthenticationService authenticationService)
     {
-        _eveApiService = eveApiService;
         _userRepository = userRepository;
         _configuration = options.Value;
         _authenticationService = authenticationService;
