@@ -21,6 +21,8 @@ using Eve.Services.Interfaces.Orders;
 using Eve.Services.Orders;
 using Eve.Services.Interfaces.EveApi.Planets;
 using Eve.Services.EveApi.Planets;
+using Eve.Services.Interfaces.EveApi.Characters;
+using Eve.Services.EveApi.Characters;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -70,6 +72,7 @@ builder.Services.AddScoped<IEveTypeService, EveTypeService>();
 builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPlanetService, PlanetService>();
+builder.Services.AddScoped<ICharacterService, CharacterService>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
     .Configure<IConfiguration>((settings, configuration) =>

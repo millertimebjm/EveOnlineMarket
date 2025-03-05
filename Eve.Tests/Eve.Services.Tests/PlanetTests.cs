@@ -104,4 +104,31 @@ public class PlanetTests
         IPlanetService planetService = new PlanetService(httpClientWrapper, planetRepository);
         await Assert.ThrowsAsync<JsonException>(async () => await planetService.GetPlanet(planetInitial.PlanetId, FAKE_ACCESS_TOKEN));
     }
+
+    [Fact]
+    public async Task GetPlanetaryInteractions_GetItems()
+    {
+        long userId = 100;
+        var planetaryInteractionInitial = new PlanetaryInteraction();
+
+        var planetRepository = Substitute.For<IPlanetRepository>();
+
+        var httpContentWrapper = Substitute.For<IHttpContentWrapper>();
+        httpContentWrapper
+            .ReadAsStringAsync()
+            .Returns(JsonSerializer.Serialize(planetaryInteractionInitial));
+
+        var httpResponseMessageWrapper = Substitute.For<IHttpResponseMessageWrapper>();
+        httpResponseMessageWrapper
+            .Content
+            .Returns(httpContentWrapper);
+            
+        var httpClientWrapper = Substitute.For<IHttpClientWrapper>();
+        httpClientWrapper
+            .GetAsync(Arg.Any<Uri>())
+            .Returns(httpResponseMessageWrapper);
+
+        IPlanetService planetService = new PlanetService(httpClientWrapper, planetRepository);
+        await planetService.GetPlanetaryInteractions(userId, FAKE_ACCESS_TOKEN);
+    }
 }

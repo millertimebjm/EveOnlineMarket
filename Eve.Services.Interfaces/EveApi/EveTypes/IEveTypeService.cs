@@ -1,5 +1,4 @@
 using Eve.Models.EveApi;
-using Eve.Services.Interfaces.Wrappers;
 
 namespace Eve.Services.Interfaces.EveApi.EveTypes;
 

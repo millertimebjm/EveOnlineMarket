@@ -31,7 +31,7 @@
     {
         var keywordValue = document.getElementById("keyword").value;
         if (keywordValue.length > 0) {
-            await refreshTypesList();
+            await refreshTypesList(keywordValue);
         }
 
         var typesList = document.getElementsByClassName("typeLink");
@@ -62,7 +62,7 @@
         }
     }
 
-    async function refreshTypesList() {
+    async function refreshTypesList(keyword) {
         document.getElementById("TypesList").innerHTML = "";
 
         let url = "@Url.Action("TypesList")";
@@ -83,6 +83,9 @@
                 links[i].onclick = async (event) => {
                     await refreshBuySellOrdersListEvent(event);
                 };
+                if (links.length > 1 && links[i].dataset.name.toLower() === keyword.toLower().trim()) {
+                    await refreshBuySellOrdersList(links[i].dataset.id);
+                }
             }
             if (links.length == 1) {
                 await refreshBuySellOrdersList(links[0].dataset.id);
