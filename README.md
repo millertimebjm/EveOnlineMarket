@@ -46,8 +46,13 @@ Bacteria, Biomass, Oxygen, Water
 test cultures (ocean temperate ice barren, bacteria water), supertensile plastics (ice, oxygen biomass)
 
 
-#SQL Notes
-```CREATE EXTENSION IF NOT EXISTS pg_trgm;
+# SQL Notes
+```
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS btree_gin;
 
-CREATE INDEX idx_type_name_trgm ON "Type" USING GIN ("Name" gin_trgm_ops);```
+CREATE INDEX idx_type_name_trgm ON "Type" USING GIN ("Name" gin_trgm_ops);
+```
+
+# Visual Studio Code issue
+">Preferences: Open Settings"
