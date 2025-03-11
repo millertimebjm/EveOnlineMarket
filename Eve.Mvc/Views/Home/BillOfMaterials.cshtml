@@ -132,12 +132,6 @@
         }, 200);
     });
 
-    @* document.getElementById("newRowName").addEventListener("focusout", () => {
-        setTimeout(() => {
-            document.getElementById("eveTypeSearchResults").classList.add("d-none");
-        }, 200);
-    }); *@
-
     document.getElementById("newRowName").addEventListener("focusin", () => {
         document.getElementById("eveTypeSearchResults").classList.remove("d-none");
     });
