@@ -19,6 +19,7 @@ using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Orders;
 using Eve.Services.Interfaces.EveApi.Characters;
 using Eve.Services.Interfaces.EveApi.Planets;
+using Eve.Models.EveTypes;
 
 namespace Eve.Mvc.Controllers;
 
@@ -130,11 +131,11 @@ public class HomeController : BaseController
 
         var eveTypes = typeId.HasValue && typeId.Value > 0 
             ? new List<EveType>{await _eveTypeService.GetEveType(typeId.Value, user.AccessToken)}
-            : await _typeRepository.Search(new TypeSearchFilterModel());
+            : await _typeRepository.Search(new EveTypeSearchFilterModel());
 
         var model = new TypesListViewModel()
         {
-            SearchFilterModel = new TypeSearchFilterModel(),
+            SearchFilterModel = new EveTypeSearchFilterModel(),
             EveTypes = eveTypes,
         };
         var typesModel = new TypesViewModel()
@@ -208,8 +209,8 @@ public class HomeController : BaseController
     {
         var model = new TypesListViewModel()
         {
-            SearchFilterModel = new TypeSearchFilterModel(),
-            EveTypes = await _typeRepository.Search(new TypeSearchFilterModel()),
+            SearchFilterModel = new EveTypeSearchFilterModel(),
+            EveTypes = await _typeRepository.Search(new EveTypeSearchFilterModel()),
         };
         var typesModel = new TypesViewModel()
         {
@@ -218,7 +219,7 @@ public class HomeController : BaseController
         return View(typesModel);
     }
 
-    public async Task<IActionResult> TypesList(TypeSearchFilterModel searchFilterModel)
+    public async Task<IActionResult> TypesList(EveTypeSearchFilterModel searchFilterModel)
     {
         var model = new TypesListViewModel()
         {
@@ -244,6 +245,29 @@ public class HomeController : BaseController
             //TypesTask = _typeRepository.GetMany(typesList),
         };
         return View(model);
+    }
+
+    public async Task<IActionResult> BillOfMaterials()
+    {
+        var user = await GetUser();
+        if (user == null) return Redirect("/login");
+
+        return View();
+    }
+
+    public async Task<JsonResult> EveTypeSearch(HashSet<int>? ids, string keyword)
+    {
+        if (ids is null && string.IsNullOrWhiteSpace(keyword)) return Json(new List<EveType>());
+
+        EveTypeSearchFilterModel eveTypeSearchFilterModel = new()
+        {
+            Ids = ids,
+            Keyword = keyword,
+            Take = 20,
+            Skip = 0,
+        };
+        var eveTypes = await _eveTypeService.Search(eveTypeSearchFilterModel);
+        return Json(eveTypes);
     }
 }
 

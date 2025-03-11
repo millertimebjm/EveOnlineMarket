@@ -1,9 +1,8 @@
 using Eve.Models.EveApi;
-using Eve.Models.Users;
-using Eve.Models;
 using Microsoft.EntityFrameworkCore;
 using Eve.Repositories.Interfaces.Types;
 using Eve.Repositories.Context;
+using Eve.Models.EveTypes;
 
 namespace Eve.Repositories.Types;
 
@@ -51,20 +50,25 @@ public class PostgresTypeRepository : ITypeRepository
         return await _dbContext.Types.Where(t => t.MarketGroupId > 0).ToListAsync();
     }
 
-    public async Task<List<EveType>> Search(TypeSearchFilterModel searchFilterModel)
+    public async Task<List<EveType>> Search(EveTypeSearchFilterModel model)
     {
         IQueryable<EveType> query = _dbContext.Types;
 
         query = query.Where(q => q.MarketGroupId > 0);
 
-        if (!string.IsNullOrWhiteSpace(searchFilterModel.Keyword))
+        if (model.Ids != null && model.Ids.Any())
         {
-            query = query.Where(q => q.Name.ToLower().Contains(searchFilterModel.Keyword.ToLower()));
+            _dbContext.Types.Where(t => model.Ids.Contains(t.TypeId));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model.Keyword))
+        {
+            query = query.Where(q => q.Name.ToLower().Contains(model.Keyword.ToLower()));
         }
 
         query = query.OrderBy(q => q.Name);
-        if (searchFilterModel.Skip > 0) query = query.Skip(searchFilterModel.Skip);
-        query = query.Take(searchFilterModel.Take);
+        if (model.Skip > 0) query = query.Skip(model.Skip);
+        query = query.Take(model.Take);
 
         return await query.ToListAsync();
     }

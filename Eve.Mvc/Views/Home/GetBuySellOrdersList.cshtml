@@ -2,7 +2,6 @@
 @model Eve.Mvc.Models.GetBuySellOrdersViewModel
 @{
     var eveUniverseTypesDictionary = (await Model.TypesTask) ?? new EveType();
-
 }
 
 <h1>@(eveUniverseTypesDictionary.Name)</h1>
@@ -13,7 +12,6 @@
 <table class="table">
     <thead>
         <tr>
-            <td style="text-align: center;">OrderId</td>
             <td style="text-align: center;">Price</td>
             <td style="text-align: center;">TotalValue</td>
             <td style="text-align: center;">VolumeTotal</td>
@@ -39,7 +37,6 @@
         {
             <tr
                 class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 && capsuleerOrderCountTotal == capsuleerOrderCountCurrent ? "d-none" : "")">
-                <td style="text-align: right;">@marketOrder.OrderId</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
                 <td style="text-align: right;">@marketOrder.VolumeTotal</td>
@@ -63,7 +60,6 @@
 <table class="table">
     <thead>
         <tr>
-            <td style="text-align: center;">OrderId</td>
             <td style="text-align: center;">Price</td>
             <td style="text-align: center;">TotalValue</td>
             <td style="text-align: center;">VolumeTotal</td>
@@ -80,7 +76,6 @@
         {
             <tr
                 class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
-                <td style="text-align: right;">@marketOrder.OrderId</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
                 <td style="text-align: right;">@marketOrder.VolumeTotal</td>

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Eve.Models.EveApi;
+using Eve.Models.EveTypes;
 using Eve.Repositories.Interfaces.Types;
 using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Wrappers;
@@ -63,5 +64,10 @@ public class EveTypeService : IEveTypeService
             });
         if (type is null) throw new Exception("type response from Eve Online API is null or empty");
         return type;
+    }
+    
+    public async Task<List<EveType>> Search(EveTypeSearchFilterModel model)
+    {
+        return await _eveTypeRepository.Search(model);
     }
 }

@@ -1,5 +1,5 @@
 using Eve.Models.EveApi;
-using Eve.Models;
+using Eve.Models.EveTypes;
 
 namespace Eve.Repositories.Interfaces.Types;
 
@@ -9,5 +9,5 @@ public interface ITypeRepository
     Task<EveType?> Get(int typeId);
     Task<EveType> Upsert(EveType type);
     Task<List<EveType>> GetMarketableTypes();
-    Task<List<EveType>> Search(TypeSearchFilterModel searchFilterModel);
+    Task<List<EveType>> Search(EveTypeSearchFilterModel model);
 }

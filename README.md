@@ -30,6 +30,9 @@ factory planet gas
 3 synthetic, hyk 10 gas, hyk 5 gas, vil 4 gas               cryo hyk3, cryo vil 4, lish hyk3
 3 test culture okag 3 ocean, sare 3 ocean, ashi 11 ocean    cryo oka3, cryo as11, lish oka3, lish ash11?, 
 
+kehjari VI (12 pips)
+ienakkamon (12.5 pips)
+
 Transcranial microcontrollers 230/290
 base, carbon, micro, noble
 precious, reactive, bacteria, biofuels
@@ -41,3 +44,10 @@ biofuels, precious => biocells
 Synthetic Synapses 270/300
 Bacteria, Biomass, Oxygen, Water 
 test cultures (ocean temperate ice barren, bacteria water), supertensile plastics (ice, oxygen biomass)
+
+
+#SQL Notes
+```CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+
+CREATE INDEX idx_type_name_trgm ON "Type" USING GIN ("Name" gin_trgm_ops);```

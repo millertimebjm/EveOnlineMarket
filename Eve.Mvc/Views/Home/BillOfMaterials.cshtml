@@ -1,0 +1,144 @@
+<h1>Bill of Materials</h1>
+
+<div class="row">
+    <div class="col-8">
+        <table class="table">
+            <thead>
+                <tr class="d-flex">
+                    <th scope="col" class="col-6">Type</td>
+                    <th scope="col" class="col-2">Count</td>
+                    <th scope="col" class="col-2">Total</td>
+                    <th scope="col" class="col-2">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="d-none bomRow d-flex">
+                    <td class="bomRowType col-6"></td>
+                    <td class="bomRowCount col-2"></td>
+                    <td class="bomRowTotal col-2"></td>
+                    <td class="bomRowActions col-2"><a href="#">Split</a> <a href="#">Delete</a></td>
+                </tr>
+                <tr id="newRow" class="d-flex">
+                    <td class="col-6">
+                        <div class="input-group mb-3">
+                            <input class="form-control" id="newRowName" type="text" placeholder="item or blueprint">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="newRowClearName">X</button>
+                            </div>
+                        </div>
+                        <div class="list-group d-none" id="eveTypeSearchResults">
+                            <a href="#" class="list-group-item list-group-item-action border-0 py-2 px-3 d-none">
+                                <span class="fw-medium"></span>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="col-2"><input type="text" size="5" id="newRowCount" value="1"></td>
+                    <td class="col-2"></td>
+                    <td class="col-2"><a href="#">Add</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript" src="~/js/searchStore.js"></script>
+
+<script type="text/javascript">
+    const searchStore = new SearchStore();
+    searchStore.init();
+
+    async function eveTypesSearch(keyword) {
+        const storeResults = await searchStore.getSearch(keyword);
+        if (storeResults) {
+            return storeResults.results;
+        }
+        const eveTypes = await getData("/home/EveTypeSearch?keyword=" + keyword);
+        await searchStore.addSearch(keyword, eveTypes);
+        return eveTypes;
+    }
+
+    async function eveTypesDisplay(eveTypes) {
+        const searchResultsDiv = document.getElementById("eveTypeSearchResults");
+        const oldEveTypes = searchResultsDiv.querySelectorAll("a");
+        for (let i = 1; i < oldEveTypes.length; i++) {
+            oldEveTypes[i].remove();
+        }
+        eveTypes.forEach((eveType) => {
+            const anchorTemplate = searchResultsDiv.querySelector("a");
+            let newAnchor = anchorTemplate.cloneNode(true);
+            newAnchor.querySelector("span").innerText = eveType.name;
+            newAnchor.setAttribute("data-id", eveType.type_id);
+            newAnchor.setAttribute("data-name", eveType.name);
+            newAnchor.classList.remove("d-none");
+            @* newAnchor.addEventListener("click", async (event) => {
+                await eveTypeSearchClicked(event);
+            }); *@
+            searchResultsDiv.append(newAnchor);
+        });
+    }
+
+    async function eveTypeSearchClicked(event) {
+        const typeId = event.target.closest("a").getAttribute("data-id");
+        document.getElementById("eveTypeSearchResults").classList.add("d-none");
+        document.getElementById("newRowName").value = event.target.closest("a").getAttribute("data-name");
+        eveTypesDisplay([]);
+    }
+    document.getElementById("eveTypeSearchResults").addEventListener("click", async (event) => await eveTypeSearchClicked(event));
+    document.getElementById("newRowClearName").addEventListener("click", async (event) => {
+        document.getElementById("newRowName").value = "";
+        eveTypesDisplay([]);
+    });
+
+    async function getData(url) {
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+    }
+
+    let searchTimeoutId = null;
+    const newRowName = document.getElementById("newRowName");
+    newRowName.addEventListener("keyup", async (event) => {
+        const beforeValue = event.target.value.trim();
+        if (beforeValue === "") {
+            eveTypesDisplay([]);
+            return;
+        }
+        await new Promise(r => setTimeout(r, 200));
+        if (event.key === 'Enter') {
+            if (searchTimeoutId) {
+                clearTimeout(searchTimeoutId);
+            }
+            event.preventDefault();
+            const eveTypes = await eveTypesSearch(beforeValue);
+            eveTypesDisplay(eveTypes);
+            document.getElementById("eveTypeSearchResults").classList.remove("d-none");
+            return;
+        }
+
+        if (searchTimeoutId) {
+            clearTimeout(searchTimeoutId);
+        }
+        searchTimeoutId = setTimeout(async () => {
+            if (beforeValue === event.target.value.trim()) {
+                const eveTypes = await eveTypesSearch(beforeValue);
+                eveTypesDisplay(eveTypes);
+                document.getElementById("eveTypeSearchResults").classList.remove("d-none");
+            }
+        }, 200);
+    });
+
+    @* document.getElementById("newRowName").addEventListener("focusout", () => {
+        setTimeout(() => {
+            document.getElementById("eveTypeSearchResults").classList.add("d-none");
+        }, 200);
+    }); *@
+
+    document.getElementById("newRowName").addEventListener("focusin", () => {
+        document.getElementById("eveTypeSearchResults").classList.remove("d-none");
+    });
+</script>
