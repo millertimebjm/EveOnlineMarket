@@ -7,15 +7,15 @@
                 <tr class="d-flex">
                     <th scope="col" class="col-6">Type</td>
                     <th scope="col" class="col-2">Count</td>
-                    <th scope="col" class="col-2">Total</td>
+                    <th scope="col" class="col-2">Value</td>
                     <th scope="col" class="col-2">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="d-none bomRow d-flex">
                     <td class="bomRowType col-6"></td>
-                    <td class="bomRowCount col-2"><input type="text" class="form-control bomRowTotalInput" size="5" value="1"></td>
-                    <td class="bomRowTotal col-2"></td>
+                    <td class="bomRowCount col-2"><input type="text" class="form-control bomRowValueInput" size="5" value="1"></td>
+                    <td class="bomRowValue col-2"></td>
                     <td class="bomRowActions col-2"><a href="#">Split</a> <a href="#">Delete</a></td>
                 </tr>
                 <tr id="newRow" class="d-flex">
@@ -33,7 +33,7 @@
                         </div>
                     </td>
                     <td class="col-2"><input type="text" class="form-control" size="5" id="newRowCount" value="1"></td>
-                    <td class="col-2 total"></td>
+                    <td class="col-2 value"></td>
                     <td class="col-2"><a href="#" id="newRowActionAdd"><i class="bi bi-file-earmark-plus"></i></a></td>
                 </tr>
             </tbody>
@@ -63,9 +63,9 @@
         const currentInputNameEveTypeMatch = eveTypes.filter(et => et.name.toLowerCase() === currentInputName)
         if (currentInputNameEveTypeMatch.length === 1) {
             console.log("found a match: " + currentInputNameEveTypeMatch[0].type_id);
-            const total = await getOrderValue(currentInputNameEveTypeMatch[0].type_id);
-            document.getElementById("newRow").querySelector(".total").innerText = eveReadableIskValue(total);
-            document.getElementById("newRow").querySelector(".total").setAttribute("data-price", marketOrder.price);
+            const orderValue = await getOrderValue(currentInputNameEveTypeMatch[0].type_id);
+            document.getElementById("newRow").querySelector(".value").innerText = eveReadableIskValue(orderValue);
+            document.getElementById("newRow").querySelector(".value").setAttribute("data-price", orderValue);
 
             document.getElementById("newRowActionAdd").classList.remove("d-none");
             return;
@@ -86,10 +86,10 @@
             let templateRow = document.querySelector(".bomRow.d-none");
             let newRow = templateRow.cloneNode(true);
             newRow.querySelector(".bomRowType").innerText = eveType.name;
-            newRow.querySelector(".bomRowCount").querySelector(".bomRowTotalInput").value = document.getElementById("newRowCount").value;
-            const marketOrder = await getData("/home/GetMarketOrder?typeId=" + eveType.type_id)
-            newRow.querySelector(".bomRowTotal").innerText = eveReadableIskValue(marketOrder.price);
-            newRow.querySelector(".bomRowTotal").setAttribute("data-price", marketOrder.price);
+            newRow.querySelector(".bomRowCount").querySelector(".bomRowValueInput").value = document.getElementById("newRowCount").value;
+            const orderValue = await getOrderValue(eveType.type_id);
+            newRow.querySelector(".bomRowValue").innerText = eveReadableIskValue(orderValue);
+            newRow.querySelector(".bomRowValue").setAttribute("data-price", orderValue);
             document.getElementById("newRowCount").value = 1;
             newRow.classList.remove("d-none");
             templateRow.after(newRow);
