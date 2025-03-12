@@ -257,6 +257,9 @@ public class HomeController : BaseController
 
     public async Task<JsonResult> EveTypeSearch(HashSet<int>? ids, string keyword)
     {
+        var user = await GetUser();
+        if (user == null) throw new Exception("You are not logged in.");
+
         if (ids is null && string.IsNullOrWhiteSpace(keyword)) return Json(new List<EveType>());
 
         EveTypeSearchFilterModel eveTypeSearchFilterModel = new()
@@ -268,6 +271,16 @@ public class HomeController : BaseController
         };
         var eveTypes = await _eveTypeService.Search(eveTypeSearchFilterModel);
         return Json(eveTypes);
+    }
+
+    public async Task<JsonResult> GetMarketOrder(int typeId, bool isBuyOrder = true)
+    {
+        var user = await GetUser();
+        if (user == null) throw new Exception("You are not logged in.");
+
+        var marketOrders = await _ordersService.GetBuySellOrders(typeId, user.AccessToken);
+        var marketOrder = marketOrders.FirstOrDefault(mo => isBuyOrder == mo.IsBuyOrder);
+        return Json(marketOrder);
     }
 }
 

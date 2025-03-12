@@ -56,3 +56,6 @@ CREATE INDEX idx_type_name_trgm ON "Type" USING GIN ("Name" gin_trgm_ops);
 
 # Visual Studio Code issue
 ">Preferences: Open Settings"
+
+# Fuzzworks Postgres SQL dump
+https://www.fuzzwork.co.uk/dump/postgres-schema-latest.dmp.bz2.md5

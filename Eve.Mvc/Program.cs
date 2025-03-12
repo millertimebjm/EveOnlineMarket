@@ -2,8 +2,6 @@ using Eve.Services.Interfaces.Authentications;
 using Eve.Services.Authentications;
 using Eve.Repositories.Interfaces.Users;
 using Eve.Repositories.Users;
-using Eve.Services.Interfaces.EveApi;
-using Eve.Services.EveApi;
 using Eve.Repositories.Context;
 using Eve.Repositories.Interfaces.Types;
 using Eve.Repositories.Types;
@@ -48,7 +46,7 @@ builder.Configuration
     .AddEnvironmentVariables()
     .AddAzureAppConfiguration(appConfigConnectionString)
     .Build();
- 
+
 var connectionString = builder.Configuration
     .GetValue(typeof(string), "EveOnlineMarket:ConnectionString")?
     .ToString();
@@ -80,11 +78,15 @@ builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
         configuration.GetSection(_applicationNameConfigurationService).Bind(settings);
     });
 
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = ".EveOnlineMarket.Session";
-    options.IdleTimeout = TimeSpan.FromDays(1);
+    options.IdleTimeout = TimeSpan.FromDays(1); 
     options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true; // Security best practice
+    options.Cookie.SameSite = SameSiteMode.Lax; // Adjust if needed
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Enforce HTTPS
 });
 
 var app = builder.Build();
@@ -101,9 +103,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
-app.UseAuthorization();
 app.UseSession();
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",

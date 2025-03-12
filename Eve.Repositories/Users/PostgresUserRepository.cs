@@ -24,6 +24,7 @@ public class PostgresUserRepository : IUserRepository
     {
         return await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId);
     }
+    
 
     public async Task<User> Upsert(User user)
     {

@@ -14,7 +14,7 @@
             <tbody>
                 <tr class="d-none bomRow d-flex">
                     <td class="bomRowType col-6"></td>
-                    <td class="bomRowCount col-2"></td>
+                    <td class="bomRowCount col-2"><input type="text" class="form-control bomRowTotalInput" size="5" value="1"></td>
                     <td class="bomRowTotal col-2"></td>
                     <td class="bomRowActions col-2"><a href="#">Split</a> <a href="#">Delete</a></td>
                 </tr>
@@ -32,9 +32,9 @@
                             </a>
                         </div>
                     </td>
-                    <td class="col-2"><input type="text" size="5" id="newRowCount" value="1"></td>
-                    <td class="col-2"></td>
-                    <td class="col-2"><a href="#">Add</a></td>
+                    <td class="col-2"><input type="text" class="form-control" size="5" id="newRowCount" value="1"></td>
+                    <td class="col-2 total"></td>
+                    <td class="col-2"><a href="#" id="newRowActionAdd"><i class="bi bi-file-earmark-plus"></i></a></td>
                 </tr>
             </tbody>
         </table>
@@ -44,45 +44,93 @@
 <script type="text/javascript" src="~/js/searchStore.js"></script>
 
 <script type="text/javascript">
-    const searchStore = new SearchStore();
-    searchStore.init();
+    const eveTypeKeywordSearchStore = new SearchStore("eveTypeKeywordSearchStore");
+    eveTypeKeywordSearchStore.init();
 
     async function eveTypesSearch(keyword) {
-        const storeResults = await searchStore.getSearch(keyword);
+        const storeResults = await eveTypeKeywordSearchStore.getSearch(keyword);
         if (storeResults) {
             return storeResults.results;
         }
         const eveTypes = await getData("/home/EveTypeSearch?keyword=" + keyword);
-        await searchStore.addSearch(keyword, eveTypes);
+        await eveTypeKeywordSearchStore.addSearch(keyword, eveTypes);
         return eveTypes;
     }
 
     async function eveTypesDisplay(eveTypes) {
+        resetEveTypesDisplaySearchItems();
+        const currentInputName = document.getElementById("newRowName").value.trim().toLowerCase();
+        const currentInputNameEveTypeMatch = eveTypes.filter(et => et.name.toLowerCase() === currentInputName)
+        if (currentInputNameEveTypeMatch.length === 1) {
+            console.log("found a match: " + currentInputNameEveTypeMatch[0].type_id);
+            const total = await getOrderValue(currentInputNameEveTypeMatch[0].type_id);
+            document.getElementById("newRow").querySelector(".total").innerText = eveReadableIskValue(total);
+            document.getElementById("newRow").querySelector(".total").setAttribute("data-price", marketOrder.price);
+
+            document.getElementById("newRowActionAdd").classList.remove("d-none");
+            return;
+        }
+        document.getElementById("newRowActionAdd").classList.add("d-none");
+        eveTypes.forEach((eveType) => {
+            addEveTypesDisplaySearchItem(eveType);
+        });
+    }
+
+    async function addBillOfMaterialsRow() {
+        const keyword = document.getElementById("newRowName").value.trim().toLowerCase();
+        const eveTypes = await getData("/home/EveTypeSearch?keyword=" + keyword);
+        const currentInputName = document.getElementById("newRowName").value.trim().toLowerCase();
+        const currentInputNameEveTypeMatch = eveTypes.filter(et => et.name.toLowerCase() === currentInputName)
+        if (currentInputNameEveTypeMatch.length === 1) {
+            eveType = eveTypes[0];
+            let templateRow = document.querySelector(".bomRow.d-none");
+            let newRow = templateRow.cloneNode(true);
+            newRow.querySelector(".bomRowType").innerText = eveType.name;
+            newRow.querySelector(".bomRowCount").querySelector(".bomRowTotalInput").value = document.getElementById("newRowCount").value;
+            const marketOrder = await getData("/home/GetMarketOrder?typeId=" + eveType.type_id)
+            newRow.querySelector(".bomRowTotal").innerText = eveReadableIskValue(marketOrder.price);
+            newRow.querySelector(".bomRowTotal").setAttribute("data-price", marketOrder.price);
+            document.getElementById("newRowCount").value = 1;
+            newRow.classList.remove("d-none");
+            templateRow.after(newRow);
+        } 
+    }
+    document.getElementById("newRowActionAdd").addEventListener("click", addBillOfMaterialsRow);
+
+    async function getOrderValue(typeId){
+        const marketOrder = await getData("/home/GetMarketOrder?typeId=" + typeId)
+        return marketOrder.price;
+    }
+
+    function resetEveTypesDisplaySearchItems() {
         const searchResultsDiv = document.getElementById("eveTypeSearchResults");
         const oldEveTypes = searchResultsDiv.querySelectorAll("a");
         for (let i = 1; i < oldEveTypes.length; i++) {
             oldEveTypes[i].remove();
         }
-        eveTypes.forEach((eveType) => {
-            const anchorTemplate = searchResultsDiv.querySelector("a");
-            let newAnchor = anchorTemplate.cloneNode(true);
-            newAnchor.querySelector("span").innerText = eveType.name;
-            newAnchor.setAttribute("data-id", eveType.type_id);
-            newAnchor.setAttribute("data-name", eveType.name);
-            newAnchor.classList.remove("d-none");
-            @* newAnchor.addEventListener("click", async (event) => {
-                await eveTypeSearchClicked(event);
-            }); *@
-            searchResultsDiv.append(newAnchor);
-        });
+    }
+
+    function addEveTypesDisplaySearchItem(eveType) {
+        const searchResultsDiv = document.getElementById("eveTypeSearchResults");
+        const anchorTemplate = searchResultsDiv.querySelector("a");
+        let newAnchor = anchorTemplate.cloneNode(true);
+        newAnchor.querySelector("span").innerText = eveType.name;
+        newAnchor.setAttribute("data-id", eveType.type_id);
+        newAnchor.setAttribute("data-name", eveType.name);
+        newAnchor.classList.remove("d-none");
+        searchResultsDiv.append(newAnchor);
     }
 
     async function eveTypeSearchClicked(event) {
         const typeId = event.target.closest("a").getAttribute("data-id");
+        const name = event.target.closest("a").getAttribute("data-name");
         document.getElementById("eveTypeSearchResults").classList.add("d-none");
-        document.getElementById("newRowName").value = event.target.closest("a").getAttribute("data-name");
-        eveTypesDisplay([]);
+        document.getElementById("newRowName").value = name
+        const eveTypes = await eveTypesSearch(name);
+        eveTypesDisplay(eveTypes);
+        delayedEveTypeNameChange(name);
     }
+
     document.getElementById("eveTypeSearchResults").addEventListener("click", async (event) => await eveTypeSearchClicked(event));
     document.getElementById("newRowClearName").addEventListener("click", async (event) => {
         document.getElementById("newRowName").value = "";
@@ -104,12 +152,16 @@
     const newRowName = document.getElementById("newRowName");
     newRowName.addEventListener("keyup", async (event) => {
         const beforeValue = event.target.value.trim();
+        await delayedEveTypeNameChange(beforeValue, event);
+    });
+
+    async function delayedEveTypeNameChange(beforeValue, event = null) {
         if (beforeValue === "") {
             eveTypesDisplay([]);
             return;
         }
         await new Promise(r => setTimeout(r, 200));
-        if (event.key === 'Enter') {
+        if (event && event.key === 'Enter') {
             if (searchTimeoutId) {
                 clearTimeout(searchTimeoutId);
             }
@@ -118,21 +170,34 @@
             eveTypesDisplay(eveTypes);
             document.getElementById("eveTypeSearchResults").classList.remove("d-none");
             return;
-        }
-
-        if (searchTimeoutId) {
-            clearTimeout(searchTimeoutId);
-        }
-        searchTimeoutId = setTimeout(async () => {
-            if (beforeValue === event.target.value.trim()) {
-                const eveTypes = await eveTypesSearch(beforeValue);
-                eveTypesDisplay(eveTypes);
-                document.getElementById("eveTypeSearchResults").classList.remove("d-none");
+        } else {
+            if (searchTimeoutId) {
+                clearTimeout(searchTimeoutId);
             }
-        }, 200);
-    });
+            searchTimeoutId = setTimeout(async () => {
+                if (event && beforeValue === event.target.value.trim()) {
+                    const eveTypes = await eveTypesSearch(beforeValue);
+                    eveTypesDisplay(eveTypes);
+                    document.getElementById("eveTypeSearchResults").classList.remove("d-none");
+                }
+            }, 200);
+        }
+    }
 
     document.getElementById("newRowName").addEventListener("focusin", () => {
         document.getElementById("eveTypeSearchResults").classList.remove("d-none");
     });
+
+    function eveReadableIskValue(d) {
+        if (d > 1000000000) { // billion
+            return (d / 1000000000).toFixed(2) + "b";
+        }
+        if (d > 1000000) { // million
+            return (d / 1000000).toFixed(2) + "m";
+        }
+        if (d > 1000) { // thousand
+            return (d / 1000).toFixed(2) + "k";
+        }
+        return d.toFixed(0);
+    }
 </script>
