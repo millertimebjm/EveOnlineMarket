@@ -2,7 +2,7 @@
 
 <div class="row">
     <div class="col-8">
-        <table class="table">
+        <table class="table" id="billOfMaterialsTable">
             <thead>
                 <tr class="d-flex">
                     <th scope="col" class="col-6">Type</td>
@@ -14,11 +14,11 @@
             <tbody>
                 <tr class="d-none bomRow d-flex">
                     <td class="bomRowType col-6"></td>
-                    <td class="bomRowCount col-2"><input type="text" class="form-control bomRowValueInput" size="5" value="1"></td>
+                    <td class="bomRowCount col-2"><input type="text" class="form-control bomRowCountInput" size="5" value="1"></td>
                     <td class="bomRowValue col-2"></td>
-                    <td class="bomRowActions col-2"><a href="#">Split</a> <a href="#">Delete</a></td>
+                    <td class="bomRowActions col-2"><a href="#">Split</a> <a href="#" class="bomRowDelete"><i class="bi bi-file-excel fs-4"></i></a></td>
                 </tr>
-                <tr id="newRow" class="d-flex">
+                <tr id="newRow" class="d-flex bomRow">
                     <td class="col-6">
                         <div class="input-group mb-3">
                             <input class="form-control" id="newRowName" type="text" placeholder="item or blueprint">
@@ -32,28 +32,41 @@
                             </a>
                         </div>
                     </td>
-                    <td class="col-2"><input type="text" class="form-control" size="5" id="newRowCount" value="1"></td>
-                    <td class="col-2 value"></td>
-                    <td class="col-2"><a href="#" id="newRowActionAdd"><i class="bi bi-file-earmark-plus"></i></a></td>
+                    <td class="col-2"><input type="text" class="form-control bomRowCountInput" size="5" id="newRowCount" value="1"></td>
+                    <td class="col-2 bomRowValue" id="newRowValue"></td>
+                    <td class="col-2"><a href="#" id="newRowActionAdd"><i class="bi bi-file-earmark-plus fs-4"></i></a></td>
                 </tr>
             </tbody>
         </table>
     </div>
 </div>
 
-<script type="text/javascript" src="~/js/searchStore.js"></script>
+@* <script type="text/javascript" src="~/js/searchStore.js"></script> *@
+<script type="text/javascript" src="~/js/keyValueStore.js"></script>
+
 
 <script type="text/javascript">
-    const eveTypeKeywordSearchStore = new SearchStore("eveTypeKeywordSearchStore");
-    eveTypeKeywordSearchStore.init();
+    const KeyValueType = {
+        EVE_TYPE_SEARCH: "eveTypeSearch",
+        EVE_TYPE_NAME: "eveTypeName",
+        MARKET_ORDER_PRICE: "marketOrderPrice"
+    };
+
+    const keyValueStore = new KeyValueStore();
+    keyValueStore.init();
 
     async function eveTypesSearch(keyword) {
-        const storeResults = await eveTypeKeywordSearchStore.getSearch(keyword);
+        const eveTypesSearchCache = `${KeyValueType.EVE_TYPE_SEARCH}-${keyword}`;
+        const storeResults = await keyValueStore.get(eveTypesSearchCache);
         if (storeResults) {
-            return storeResults.results;
+            console.log("eveTypeSearch cache hit: ", eveTypesSearchCache, storeResults);
+            return storeResults;
         }
         const eveTypes = await getData("/home/EveTypeSearch?keyword=" + keyword);
-        await eveTypeKeywordSearchStore.addSearch(keyword, eveTypes);
+        await keyValueStore.set(`${KeyValueType.EVE_TYPE_SEARCH}-${keyword}`, eveTypes);
+        eveTypes.forEach(async (eveType) => {
+            keyValueStore.set(`${KeyValueType.EVE_TYPE_NAME}-${eveType.name}`, eveType.type_id);
+        });
         return eveTypes;
     }
 
@@ -62,11 +75,9 @@
         const currentInputName = document.getElementById("newRowName").value.trim().toLowerCase();
         const currentInputNameEveTypeMatch = eveTypes.filter(et => et.name.toLowerCase() === currentInputName)
         if (currentInputNameEveTypeMatch.length === 1) {
-            console.log("found a match: " + currentInputNameEveTypeMatch[0].type_id);
             const orderValue = await getOrderValue(currentInputNameEveTypeMatch[0].type_id);
-            document.getElementById("newRow").querySelector(".value").innerText = eveReadableIskValue(orderValue);
-            document.getElementById("newRow").querySelector(".value").setAttribute("data-price", orderValue);
-
+            document.getElementById("newRow").querySelector(".bomRowValue").innerText = eveReadableIskValue(orderValue);
+            document.getElementById("newRow").querySelector(".bomRowValue").setAttribute("data-price", orderValue);
             document.getElementById("newRowActionAdd").classList.remove("d-none");
             return;
         }
@@ -86,19 +97,35 @@
             let templateRow = document.querySelector(".bomRow.d-none");
             let newRow = templateRow.cloneNode(true);
             newRow.querySelector(".bomRowType").innerText = eveType.name;
-            newRow.querySelector(".bomRowCount").querySelector(".bomRowValueInput").value = document.getElementById("newRowCount").value;
+            newRow.querySelector(".bomRowCount").querySelector(".bomRowCountInput").value = document.getElementById("newRowCount").value;
             const orderValue = await getOrderValue(eveType.type_id);
-            newRow.querySelector(".bomRowValue").innerText = eveReadableIskValue(orderValue);
             newRow.querySelector(".bomRowValue").setAttribute("data-price", orderValue);
-            document.getElementById("newRowCount").value = 1;
+            updateBomRowValue(newRow);
+            clearNewRow();
             newRow.classList.remove("d-none");
             templateRow.after(newRow);
         } 
     }
+    
+    function clearNewRow() {
+        document.getElementById("newRowName").value = "";
+        document.getElementById("newRowCount").value = 1;
+        document.getElementById("newRowValue").innerText = "";
+        document.getElementById("newRowValue").setAttribute("data-price", "");
+        document.getElementById("newRowActionAdd").classList.add("d-none");
+    }
+
     document.getElementById("newRowActionAdd").addEventListener("click", addBillOfMaterialsRow);
 
     async function getOrderValue(typeId){
+        const orderValueCache = `${KeyValueType.MARKET_ORDER_PRICE}-${typeId}`;
+        const price = await keyValueStore.get(orderValueCache);
+        if (price) {
+            console.log("order value cache hit: ", orderValueCache, price);
+            return price;
+        }
         const marketOrder = await getData("/home/GetMarketOrder?typeId=" + typeId)
+        keyValueStore.set(orderValueCache, marketOrder.price);
         return marketOrder.price;
     }
 
@@ -134,6 +161,8 @@
     document.getElementById("eveTypeSearchResults").addEventListener("click", async (event) => await eveTypeSearchClicked(event));
     document.getElementById("newRowClearName").addEventListener("click", async (event) => {
         document.getElementById("newRowName").value = "";
+        document.getElementById("newRowValue").innerText = "";
+        document.getElementById("newRowCount").value = 1;
         eveTypesDisplay([]);
     });
 
@@ -149,8 +178,7 @@
     }
 
     let searchTimeoutId = null;
-    const newRowName = document.getElementById("newRowName");
-    newRowName.addEventListener("keyup", async (event) => {
+    document.getElementById("newRowName").addEventListener("keyup", async (event) => {
         const beforeValue = event.target.value.trim();
         await delayedEveTypeNameChange(beforeValue, event);
     });
@@ -200,4 +228,23 @@
         }
         return d.toFixed(0);
     }
+
+    function updateBomRowValue(bomRow) {
+        const bomRowValueTd = bomRow.querySelector(".bomRowValue");
+        const newCountValue = bomRow.querySelector(".bomRowCountInput").value;
+        const pricePerUnit = bomRowValueTd.getAttribute("data-price");
+        bomRowValueTd.innerText = eveReadableIskValue(newCountValue * pricePerUnit);
+    }
+
+    document.getElementById("billOfMaterialsTable").addEventListener("keyup", (event) => {
+        if (event.target.classList.contains("bomRowCountInput")) {
+            updateBomRowValue(event.target.closest(".bomRow"));
+        }
+    });
+
+    document.getElementById("billOfMaterialsTable").addEventListener("click", (event) => {
+        if (event.target.closest("a").classList.contains("bomRowDelete")) {
+            event.target.closest(".bomRow").remove();
+        }
+    })
 </script>

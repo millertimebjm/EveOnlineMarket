@@ -279,8 +279,9 @@ public class HomeController : BaseController
         if (user == null) throw new Exception("You are not logged in.");
 
         var marketOrders = await _ordersService.GetBuySellOrders(typeId, user.AccessToken);
-        var marketOrder = marketOrders.FirstOrDefault(mo => isBuyOrder == mo.IsBuyOrder);
-        return Json(marketOrder);
+        var marketOrder = marketOrders.Where(mo => isBuyOrder == mo.IsBuyOrder);
+        if (isBuyOrder) return Json(marketOrders.OrderByDescending(mo => mo.Price).FirstOrDefault());
+        else return Json(marketOrders.OrderBy(mo => mo.Price).FirstOrDefault());
     }
 }
 
