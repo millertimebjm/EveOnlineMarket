@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using Eve.Models.EveApi;
 using Eve.Services.Interfaces.Orders;
@@ -54,5 +55,28 @@ public class OrdersService : IOrdersService
         //     'regionlimit': 10000002,  # The Forge region ID
         //     'usesystem': 30000142     # Jita system ID
         // }
+    }
+
+    public async Task<IDictionary<long, int>> GetMarketOrderRanks(
+        IDictionary<int, long> typeOrderIds,
+        string accessToken)
+    {
+        IDictionary<long, int> orderRanks = new ConcurrentDictionary<long, int>();
+        await Parallel.ForEachAsync(typeOrderIds, async (typeOrderId, token) => {
+            var marketOrders = await GetBuySellOrders(typeOrderId.Key, accessToken);
+            marketOrders = marketOrders
+                .Where(mo => !mo.IsBuyOrder)
+                .OrderBy(mo => mo.Price)
+                .ToList();
+            for (int i = 0; i < marketOrders.Count(); i++)
+            {
+                if (typeOrderId.Value == marketOrders[i].OrderId)
+                {
+                    orderRanks.TryAdd(typeOrderId.Value, i+1);
+                    break;
+                }
+            }
+        });
+        return orderRanks;
     }
 }

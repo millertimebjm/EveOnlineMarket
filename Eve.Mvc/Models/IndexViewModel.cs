@@ -11,4 +11,7 @@ public class IndexViewModel
         = new User();
     public Task<Dictionary<int, EveType>> Types { get; set; } 
         = Task.FromResult(new Dictionary<int, EveType>());
+
+    public Task<IDictionary<long, int>> OrderRanksTask { get; set; }
+        = Task.FromResult((IDictionary<long, int>)new Dictionary<long, int>());
 }

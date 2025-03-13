@@ -243,7 +243,7 @@
     });
 
     document.getElementById("billOfMaterialsTable").addEventListener("click", (event) => {
-        if (event.target.closest("a").classList.contains("bomRowDelete")) {
+        if (event.target.closest("a") && event.target.closest("a").classList.contains("bomRowDelete")) {
             event.target.closest(".bomRow").remove();
         }
     })

@@ -63,7 +63,6 @@ public class HomeController : BaseController
     public async Task<IActionResult> Index()
     {
         var user = await GetUser();
-        //if (DateTime.UtcNow > user.TokenExpirationDate) await RefreshToken(user);
         if (user == null) return Redirect("/login");
 
         var model = new IndexViewModel
@@ -75,7 +74,15 @@ public class HomeController : BaseController
             model.User.UserId,
             model.User.AccessToken);
 
-        model.Types = GetTypes(model.EveMarketOrdersTask, model.User.AccessToken);
+        IDictionary<int, long> typeOrderIds = (await model.EveMarketOrdersTask)
+            .Select(mo => new KeyValuePair<int, long>(mo.TypeId, mo.OrderId))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+        model.OrderRanksTask = _ordersService.GetMarketOrderRanks(
+            typeOrderIds,
+            model.User.AccessToken
+        );
+
+        model.TypesTask = GetTypes(model.EveMarketOrdersTask, model.User.AccessToken);
         return View(model);
     }
 
@@ -109,7 +116,6 @@ public class HomeController : BaseController
 
         var callback = _configuration.GetCallbackUrl();
         if (string.IsNullOrEmpty(clientId)) throw new ArgumentNullException(nameof(callback));
-        Console.WriteLine(callback);
 
         var state = HttpUtility.UrlEncode(Guid.NewGuid().ToString());
         var scopes = HttpUtility.UrlEncode("esi-markets.read_character_orders.v1 esi-planets.manage_planets.v1 esi-planets.read_customs_offices.v1");
@@ -279,9 +285,11 @@ public class HomeController : BaseController
         if (user == null) throw new Exception("You are not logged in.");
 
         var marketOrders = await _ordersService.GetBuySellOrders(typeId, user.AccessToken);
-        var marketOrder = marketOrders.Where(mo => isBuyOrder == mo.IsBuyOrder);
-        if (isBuyOrder) return Json(marketOrders.OrderByDescending(mo => mo.Price).FirstOrDefault());
-        else return Json(marketOrders.OrderBy(mo => mo.Price).FirstOrDefault());
+        marketOrders = marketOrders.Where(mo => isBuyOrder == mo.IsBuyOrder).ToList();
+        Order? marketOrder;
+        if (isBuyOrder) marketOrder = marketOrders.OrderByDescending(mo => mo.Price).FirstOrDefault();
+        else marketOrder = marketOrders.OrderBy(mo => mo.Price).FirstOrDefault();
+        return Json(marketOrder);
     }
 }
 

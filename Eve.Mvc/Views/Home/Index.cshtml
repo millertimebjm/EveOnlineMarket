@@ -1,7 +1,8 @@
 ﻿@model Eve.Mvc.Models.IndexViewModel
 @{
     ViewData["Title"] = "Home Page";
-    var eveUniverseTypesDictionary = await Model.Types;
+    var eveUniverseTypesDictionary = await Model.TypesTask;
+    var orderRanks = await Model.OrderRanksTask;
 }
 
 @* <div>
@@ -20,10 +21,11 @@
     <thead>
         <tr>
             <td style="text-align: center;">TypeName</td>
-            <td style="text-align: center;">OrderId</td>
+            <td style="text-align: center;">Rank</td>
+            @* <td style="text-align: center;">OrderId</td> *@
             <td style="text-align: center;">Price</td>
             <td style="text-align: center;">TotalValue</td>
-            <td style="text-align: center;">VolumeTotal</td>
+            @* <td style="text-align: center;">VolumeTotal</td> *@
             <td style="text-align: center;">VolumeRemain</td>
             <td style="text-align: center;">Remaining</td>
         </tr>
@@ -38,16 +40,37 @@
                         <path fill-rule="evenodd" d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1z"></path>
                     </svg>
                 </td>
-                <td style="text-align: right;">@marketOrder.OrderId</td>
+                <td style="text-align: center;">
+                    @{
+                        var orderRank = orderRanks.Single(or => or.Key == marketOrder.OrderId);
+                    }
+                    @if (orderRank.Value == 1)
+                    {
+                        <span class="badge bg-success">1</span>
+                    }
+                    else if(orderRank.Value == 2)
+                    {
+                        <span class="badge bg-warning">2</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">@orderRank.Value</span>
+                    }
+                </td>
+                @* <td style="text-align: right;">@marketOrder.OrderId</td> *@
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price*marketOrder.VolumeRemain)</td>
-                <td>@marketOrder.VolumeTotal</td>
+                @* <td>@marketOrder.VolumeTotal</td> *@
                 <td>@marketOrder.VolumeRemain</td>
                 <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
             </tr>
         }
     </tbody>
 </table>
+
+@* <span class="badge badge-success">Success</span>
+<span class="badge badge-danger">Danger</span>
+<span class="badge badge-warning">Warning</span> *@
 
 @functions {
     private string HumanReadableTimeSpan(TimeSpan t)
