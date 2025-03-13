@@ -9,7 +9,7 @@ public class IndexViewModel
         = Task.FromResult(new List<Order>());
     public User User {get; set;} 
         = new User();
-    public Task<Dictionary<int, EveType>> Types { get; set; } 
+    public Task<Dictionary<int, EveType>> TypesTask { get; set; } 
         = Task.FromResult(new Dictionary<int, EveType>());
 
     public Task<IDictionary<long, int>> OrderRanksTask { get; set; }
