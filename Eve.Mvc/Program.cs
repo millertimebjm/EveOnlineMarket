@@ -21,6 +21,8 @@ using Eve.Services.Interfaces.EveApi.Planets;
 using Eve.Services.EveApi.Planets;
 using Eve.Services.Interfaces.EveApi.Characters;
 using Eve.Services.EveApi.Characters;
+using StackExchange.Redis;
+using Microsoft.AspNetCore.DataProtection;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -63,6 +65,8 @@ builder.Services.AddDbContext<EveDbContext>(opts =>
     opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
         .EnableSensitiveDataLogging()
         .LogTo(Console.WriteLine, LogLevel.Information));
+
+
 builder.Services.AddScoped<IPlanetRepository, PostgresPlanetRepository>();
 builder.Services.AddScoped<IHttpClientWrapper, HttpClientWrapper>();
 builder.Services.AddScoped<IRefreshTypes, RefreshTypesService>();
@@ -71,6 +75,7 @@ builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPlanetService, PlanetService>();
 builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddScoped<IDbContextFactory<EveDbContext>, EveDbContextFactory>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
     .Configure<IConfiguration>((settings, configuration) =>
@@ -78,7 +83,23 @@ builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
         configuration.GetSection(_applicationNameConfigurationService).Bind(settings);
     });
 
-builder.Services.AddDistributedMemoryCache();
+// builder.Services.AddDbContextFactory<EveDbContext>(opts => 
+//      opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
+//          .EnableSensitiveDataLogging()
+//          .LogTo(Console.WriteLine, LogLevel.Information));
+
+// First, configure Redis for data protection
+    // var redis = ConnectionMultiplexer.Connect("localhost:6379");
+    // builder.Services.AddDataProtection()
+    //     .PersistKeysToStackExchangeRedis(redis, "DataProtection-Keys");
+
+    // Then configure Redis for caching
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = "localhost:6379,password=WSy7HXvwI2D5zV6J";
+        options.InstanceName = "EveOnlineMarket";
+    });
+
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = ".EveOnlineMarket.Session";

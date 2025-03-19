@@ -42,7 +42,7 @@
                 </td>
                 <td style="text-align: center;">
                     @{
-                        var orderRank = orderRanks.Single(or => or.Key == marketOrder.OrderId);
+                        var orderRank = orderRanks.SingleOrDefault(or => or.Key == marketOrder.OrderId);
                     }
                     @if (orderRank.Value == 1)
                     {
@@ -52,17 +52,21 @@
                     {
                         <span class="badge bg-warning">2</span>
                     }
-                    else
+                    else if (orderRank.Value > 2)
                     {
                         <span class="badge bg-danger">@orderRank.Value</span>
+                    }
+                    else
+                    {
+                        <span class="badge">?</span>
                     }
                 </td>
                 @* <td style="text-align: right;">@marketOrder.OrderId</td> *@
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
                 <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price*marketOrder.VolumeRemain)</td>
                 @* <td>@marketOrder.VolumeTotal</td> *@
-                <td>@marketOrder.VolumeRemain</td>
-                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+                <td style="text-align: right;">@marketOrder.VolumeRemain</td>
+                <td style="text-align: right;">@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
             </tr>
         }
     </tbody>

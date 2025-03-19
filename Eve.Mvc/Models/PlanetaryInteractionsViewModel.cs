@@ -9,6 +9,6 @@ public class PlanetaryInteractionsViewModel
         = Task.FromResult(new List<PlanetaryInteraction>());
     public Task<List<Planet>> PlanetsTask { get; set; }
         = Task.FromResult(new List<Planet>());
-    public Task<List<Type>> TypesTask { get; set; }
-        = Task.FromResult(new List<Type>());
+    public Task<List<EveType>> TypesTask { get; set; }
+        = Task.FromResult(new List<EveType>());
 }

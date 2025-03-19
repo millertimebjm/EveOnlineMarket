@@ -1,25 +1,74 @@
 ﻿@using System.Text.Json
+@using Eve.Enums.PlanetEnums
 @model Eve.Mvc.Models.PlanetaryInteractionsViewModel
 @{
     ViewData["Title"] = "Planetary Interactions";
     var planetaryInteractions = await Model.PlanetaryInteractionsTask;
+    var types = await Model.TypesTask;
 }
 
-@foreach (var planetaryInteraction in planetaryInteractions) 
-{
-    var header = planetaryInteraction.Header ?? new Eve.Models.EveApi.PlanetaryInteractionHeader();
-    var planet = (await Model.PlanetsTask).Single(p => p.PlanetId == header.planet_id);
-    <span>PlanetId: @header.planet_id</span>
-    <span>PlanetName @planet.Name</span>
-    <span>Pin count: @header.num_pins</span>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+    @foreach (var planetaryInteraction in planetaryInteractions) 
+    {
+        var header = planetaryInteraction.Header ?? new Eve.Models.EveApi.PlanetaryInteractionHeader();
+        var planet = (await Model.PlanetsTask).Single(p => p.PlanetId == header.planet_id);
+        var storageFacilities = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.StorageFacility));
+        var p0Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.BasicIndustryFacility));
+        var p1Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.AdvancedIndustryFacility));
 
-    <span>@(string.Join(",", planetaryInteraction.pins.Select(p => $"schematic_id: {p.schematic_id}, ")))</span>
-    <br/>
-    @(JsonSerializer.Serialize(planetaryInteraction))
-    <br/>
-    <br/>
-    <br/>
-}
-<br/>
-<br/>
-<br/>
+        <div class="shadow-lg p-3 mb-5 bg-white rounded" style="width: fit-content; height: fit-content; margin: 10px; position: relative;">
+            <div style="display: inline-block;">
+                <h3><u>@planet.Name</u></h3>
+
+                <span><b>Storage Facility:</b></span><br/>
+                @foreach (var contents in storageFacilities.SelectMany(sf => sf.contents).OrderBy(sf => types.Single(t => sf.type_id == t.TypeId).Name))
+                {
+                    <div style="width: 100%; display: flex;">
+                        <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
+                        <span style="text-align: left;margin-right: 10px;">@types.Single(t => t.TypeId == contents.type_id).Name</span>
+                        <span style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
+                    </div>
+                }
+
+                <span><b>P0 Factories:</b></span><br/>
+                @foreach (var contents in p0Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
+                {
+                    <div style="width: 100%; display: flex;">
+                        <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
+                        <span style="text-align: left;margin-right: 10px;">@contents.Key</span>
+                        <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
+                    </div>
+                }
+
+                <span><b>P1 Factories:</b></span><br/>
+                @foreach (var contents in p1Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
+                {
+                    <div style="width: 100%; display: flex;">
+                        <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
+                        <span style="text-align: left;margin-right: 10px;">@contents.Key</span>
+                        <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* <span>Pin count: @header.num_pins</span><br/>
+        @foreach(var pin in planetaryInteraction.pins)
+        {
+            var name = types.SingleOrDefault(t => t.TypeId == pin.type_id)?.Name ?? "";
+            
+            <span>@types.SingleOrDefault(t => t.TypeId == pin.type_id)?.Name (@pin.type_id)</span><br/>
+            @foreach (var contents in pin.contents)
+            {
+                <span style="margin-left:20px;">@(types.SingleOrDefault(t => t.TypeId == contents.type_id)?.Name ?? "") (@pin.type_id): @contents.amount.ToString("N0")</span><br/>
+            }
+        }
+        
+        <span>@(string.Join(",", planetaryInteraction.pins.Select(p => $"schematic_id: {p.schematic_id}, ")))</span>
+        <br/>
+        @(JsonSerializer.Serialize(planetaryInteraction)) 
+        <br/>
+        <br/>
+        <br/> *@
+    }
+</div>

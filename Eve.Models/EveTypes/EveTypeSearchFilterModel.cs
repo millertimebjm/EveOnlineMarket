@@ -3,6 +3,7 @@ namespace Eve.Models.EveTypes;
 public class EveTypeSearchFilterModel
 {
     public HashSet<int>? Ids { get; set; }
+    public bool IsMarketableType { get; set; } = true;
     public string? Keyword { get; set; }
     public int _take = 20;
     public int Take { 

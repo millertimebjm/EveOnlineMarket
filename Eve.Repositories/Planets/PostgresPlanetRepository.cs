@@ -1,6 +1,4 @@
 using Eve.Models.EveApi;
-using Eve.Models.Users;
-using Eve.Models;
 using Microsoft.EntityFrameworkCore;
 using Eve.Repositories.Interfaces.Planets;
 using Eve.Repositories.Context;
@@ -9,46 +7,50 @@ namespace Eve.Repositories.Planets;
 
 public class PostgresPlanetRepository : IPlanetRepository
 {
-    private readonly EveDbContext _dbContext;
+    private readonly IDbContextFactory<EveDbContext> _dbContextFactory;
 
-    public PostgresPlanetRepository(EveDbContext dbContext)
+    public PostgresPlanetRepository(IDbContextFactory<EveDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<IEnumerable<Planet>> GetAll()
     {
-        return await _dbContext.Planets.ToListAsync();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Planets.ToListAsync();
     }
 
     public async Task<Planet?> Get(int planetId)
     {
-        return await _dbContext.Planets.SingleOrDefaultAsync(t => t.PlanetId == planetId);
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Planets.SingleOrDefaultAsync(t => t.PlanetId == planetId);
     }
 
     public async Task<Planet> Upsert(Planet planet)
     {
-        var existing = await _dbContext.Planets
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existing = await dbContext.Planets
             .SingleOrDefaultAsync(t => t.PlanetId == planet.PlanetId);
 
         if (existing == null)
         {
             existing = planet;
-            await _dbContext.Planets.AddAsync(planet);
+            await dbContext.Planets.AddAsync(planet);
         }
         else
         {
-            var entry = _dbContext.Entry(existing);
+            var entry = dbContext.Entry(existing);
             var hasChanges = entry.Properties.Any(p => p.IsModified);
-            if (hasChanges) await _dbContext.SaveChangesAsync();
+            if (hasChanges) await dbContext.SaveChangesAsync();
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return existing;
     }
 
     public async Task<List<Planet>> GetMany(List<int> planetIds)
     {
-        return await _dbContext.Planets.Where(p => planetIds.Contains(p.PlanetId)).ToListAsync();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Planets.Where(p => planetIds.Contains(p.PlanetId)).ToListAsync();
     }
 }

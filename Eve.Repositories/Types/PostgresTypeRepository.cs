@@ -8,57 +8,62 @@ namespace Eve.Repositories.Types;
 
 public class PostgresTypeRepository : ITypeRepository
 {
-    private readonly EveDbContext _dbContext;
+    private readonly IDbContextFactory<EveDbContext> _dbContextFactory;
 
-    public PostgresTypeRepository(EveDbContext dbContext)
+    public PostgresTypeRepository(IDbContextFactory<EveDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<IEnumerable<EveType>> GetAll()
     {
-        return await _dbContext.Types.ToListAsync();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Types.ToListAsync();
     }
 
     public async Task<EveType?> Get(int typeId)
     {
-        return await _dbContext.Types.SingleOrDefaultAsync(t => t.TypeId == typeId);
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Types.SingleOrDefaultAsync(t => t.TypeId == typeId);
     }
 
     public async Task<EveType> Upsert(EveType type)
     {
-        var existingType = await _dbContext.Types
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existingType = await dbContext.Types
             .SingleOrDefaultAsync(t => t.TypeId == type.TypeId);
 
         if (existingType == null)
         {
-            await _dbContext.Types.AddAsync(type);
+            await dbContext.Types.AddAsync(type);
         }
         else
         {
-            var entry = _dbContext.Entry(existingType);
+            var entry = dbContext.Entry(existingType);
             var hasChanges = entry.Properties.Any(p => p.IsModified);
-            if (hasChanges) await _dbContext.SaveChangesAsync();
+            if (hasChanges) await dbContext.SaveChangesAsync();
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return type;
     }
 
     public async Task<List<EveType>> GetMarketableTypes()
     {
-        return await _dbContext.Types.Where(t => t.MarketGroupId > 0).ToListAsync();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Types.Where(t => t.MarketGroupId > 0).ToListAsync();
     }
 
     public async Task<List<EveType>> Search(EveTypeSearchFilterModel model)
     {
-        IQueryable<EveType> query = _dbContext.Types;
-
-        query = query.Where(q => q.MarketGroupId > 0);
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        IQueryable<EveType> query = dbContext.Types;
+        
+        query = query.Where(q => !model.IsMarketableType || q.MarketGroupId > 0);
 
         if (model.Ids != null && model.Ids.Any())
         {
-            _dbContext.Types.Where(t => model.Ids.Contains(t.TypeId));
+            query = query.Where(t => model.Ids.Contains(t.TypeId));
         }
 
         if (!string.IsNullOrWhiteSpace(model.Keyword))
@@ -72,5 +77,4 @@ public class PostgresTypeRepository : ITypeRepository
 
         return await query.ToListAsync();
     }
-
 }

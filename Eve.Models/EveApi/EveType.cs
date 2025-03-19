@@ -94,4 +94,9 @@ public class EveType
     // volume	number($float)
     // title: get_universe_types_type_id_volume
     // volume number
+
+    public override string ToString()
+    {
+        return $"{TypeId} {Name}";
+    }
 }

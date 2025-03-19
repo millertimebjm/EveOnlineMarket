@@ -8,39 +8,42 @@ namespace Eve.Repositories.Users;
 
 public class PostgresUserRepository : IUserRepository
 {
-    private readonly EveDbContext _dbContext;
+    private readonly IDbContextFactory<EveDbContext> _dbContextFactory;
 
-    public PostgresUserRepository(EveDbContext dbContext)
+    public PostgresUserRepository(IDbContextFactory<EveDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<IEnumerable<User>> GetAll()
     {
-        return await _dbContext.Users.ToListAsync();
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Users.ToListAsync();
     }
 
     public async Task<User?> Get(long userId)
     {
-        return await _dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId);
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        return await dbContext.Users.SingleOrDefaultAsync(u => u.UserId == userId);
     }
     
 
     public async Task<User> Upsert(User user)
     {
-        var existingUser = await _dbContext.Users
+        var dbContext = await _dbContextFactory.CreateDbContextAsync();
+        var existingUser = await dbContext.Users
             .SingleOrDefaultAsync(u => u.UserId == user.UserId);
 
         if (existingUser == null)
         {
-            await _dbContext.Users.AddAsync(user);
+            await dbContext.Users.AddAsync(user);
         }
         else
         {
-            _dbContext.Entry(existingUser).CurrentValues.SetValues(user);
+            dbContext.Entry(existingUser).CurrentValues.SetValues(user);
         }
 
-        await _dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
         return user;
     }
 }

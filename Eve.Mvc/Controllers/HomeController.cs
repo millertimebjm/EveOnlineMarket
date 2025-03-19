@@ -244,11 +244,12 @@ public class HomeController : BaseController
         var typesList = new List<int>();
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.type_id)));
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.routes.Select(r => r.content_type_id)));
+        typesList = typesList.Distinct().ToList();
         var model = new PlanetaryInteractionsViewModel() 
         {
             PlanetaryInteractionsTask = planetaryInteractionsTask,
             PlanetsTask = _planetService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
-            //TypesTask = _typeRepository.GetMany(typesList),
+            TypesTask = _typeRepository.Search(new EveTypeSearchFilterModel(){ Ids = typesList.ToHashSet(), IsMarketableType = false, Take = 100, }),
         };
         return View(model);
     }
