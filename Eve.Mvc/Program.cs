@@ -61,7 +61,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAuthenticationService, OAuth2AuthenticationService>();
 builder.Services.AddScoped<IUserRepository, PostgresUserRepository>();
 builder.Services.AddSingleton(builder.Configuration);
-builder.Services.AddDbContext<EveDbContext>(opts => 
+builder.Services.AddDbContext<EveDbContext>(opts =>
     opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
         .EnableSensitiveDataLogging()
         .LogTo(Console.WriteLine, LogLevel.Information));
@@ -89,21 +89,24 @@ builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
 //          .LogTo(Console.WriteLine, LogLevel.Information));
 
 // First, configure Redis for data protection
-    // var redis = ConnectionMultiplexer.Connect("localhost:6379");
-    // builder.Services.AddDataProtection()
-    //     .PersistKeysToStackExchangeRedis(redis, "DataProtection-Keys");
+// var redis = ConnectionMultiplexer.Connect("localhost:6379");
+// builder.Services.AddDataProtection()
+//     .PersistKeysToStackExchangeRedis(redis, "DataProtection-Keys");
 
-    // Then configure Redis for caching
-    builder.Services.AddStackExchangeRedisCache(options =>
-    {
-        options.Configuration = "localhost:6379,password=WSy7HXvwI2D5zV6J";
-        options.InstanceName = "EveOnlineMarket";
-    });
+// Then configure Redis for caching
+var redisPassword = builder.Configuration
+    .GetValue(typeof(string), "EveOnlineMarket:RedisPassword")?
+    .ToString();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = $"media.bltmiller.com:6379,password={redisPassword}";
+    options.InstanceName = "EveOnlineMarket";
+});
 
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = ".EveOnlineMarket.Session";
-    options.IdleTimeout = TimeSpan.FromDays(1); 
+    options.IdleTimeout = TimeSpan.FromDays(1);
     options.Cookie.IsEssential = true;
     options.Cookie.HttpOnly = true; // Security best practice
     options.Cookie.SameSite = SameSiteMode.Lax; // Adjust if needed
