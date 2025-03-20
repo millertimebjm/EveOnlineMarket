@@ -94,6 +94,7 @@ public class EveType
     // volume	number($float)
     // title: get_universe_types_type_id_volume
     // volume number
+    public decimal Volume { get; set; }
 
     public override string ToString()
     {
