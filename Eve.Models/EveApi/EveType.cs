@@ -96,6 +96,8 @@ public class EveType
     // volume number
     public decimal Volume { get; set; }
 
+    public int? SchematicId { get; set; } = null;
+
     public override string ToString()
     {
         return $"{TypeId} {Name}";
