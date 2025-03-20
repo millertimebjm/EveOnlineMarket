@@ -20,6 +20,7 @@ using Eve.Services.Interfaces.Orders;
 using Eve.Services.Interfaces.EveApi.Characters;
 using Eve.Services.Interfaces.EveApi.Planets;
 using Eve.Models.EveTypes;
+using Eve.Services.Interfaces.EveApi.Schematics;
 
 namespace Eve.Mvc.Controllers;
 
@@ -34,6 +35,7 @@ public class HomeController : BaseController
     private readonly IEveTypeService _eveTypeService;
     private readonly IOrdersService _ordersService;
     private readonly ICharacterService _characterService;
+    private readonly ISchematicsService _schematicsService;
 
     public HomeController(
         IAuthenticationService authenticationService,
@@ -44,7 +46,8 @@ public class HomeController : BaseController
         ITypeRepository typeRepository,
         IEveTypeService eveTypeService,
         IOrdersService ordersService,
-        ICharacterService characterService) : base(
+        ICharacterService characterService,
+        ISchematicsService schematicsService) : base(
             userRepository,
             options,
             authenticationService)
@@ -58,6 +61,7 @@ public class HomeController : BaseController
         _eveTypeService = eveTypeService;
         _ordersService = ordersService;
         _characterService = characterService;
+        _schematicsService = schematicsService;
     }
 
     public async Task<IActionResult> Index()
@@ -251,6 +255,7 @@ public class HomeController : BaseController
             PlanetsTask = _planetService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
             TypesTask = _typeRepository.Search(new EveTypeSearchFilterModel(){ Ids = typesList.ToHashSet(), IsMarketableType = false, Take = 100, }),
         };
+        model.SchematicsListTask = _schematicsService.GetAll((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.schematic_id)).Where(p => p > 0).Distinct().ToList(), user.AccessToken);
         return View(model);
     }
 

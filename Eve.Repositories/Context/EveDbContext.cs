@@ -51,10 +51,15 @@ public class EveDbContext : DbContext
             .Entity<Planet>()
             .ToTable("Planet")
             .HasKey(p => p.PlanetId);
+        modelBuilder
+            .Entity<Schematic>()
+            .ToTable("Schematic")
+            .HasKey(p => p.SchematicId);
     }
 
     public DbSet<Order> MarketOrders { get; set; }
     public DbSet<EveType> Types { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Planet> Planets { get; set; }
+    public DbSet<Schematic> Schematics { get; set; }
 }

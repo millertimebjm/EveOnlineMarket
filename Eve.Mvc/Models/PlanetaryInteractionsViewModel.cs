@@ -11,4 +11,6 @@ public class PlanetaryInteractionsViewModel
         = Task.FromResult(new List<Planet>());
     public Task<List<EveType>> TypesTask { get; set; }
         = Task.FromResult(new List<EveType>());
+    public Task<List<Schematic>> SchematicsListTask { get; set; }
+        = Task.FromResult(new List<Schematic>());
 }

@@ -3,6 +3,7 @@ using System;
 using Eve.Repositories.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EveOnlineMarket.Migrations
 {
     [DbContext(typeof(EveDbContext))]
-    partial class EveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250320030005_Schematics_Migration")]
+    partial class Schematics_Migration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,9 +124,8 @@ namespace EveOnlineMarket.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "cycle_time");
 
-                    b.Property<string>("SchematicName")
-                        .IsRequired()
-                        .HasColumnType("text")
+                    b.Property<int>("SchematicName")
+                        .HasColumnType("integer")
                         .HasAnnotation("Relational:JsonPropertyName", "schematic_name");
 
                     b.HasKey("SchematicId");

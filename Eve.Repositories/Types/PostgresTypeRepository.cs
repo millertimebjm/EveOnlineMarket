@@ -6,15 +6,8 @@ using Eve.Models.EveTypes;
 
 namespace Eve.Repositories.Types;
 
-public class PostgresTypeRepository : ITypeRepository
+public class PostgresTypeRepository(IDbContextFactory<EveDbContext> _dbContextFactory) : ITypeRepository
 {
-    private readonly IDbContextFactory<EveDbContext> _dbContextFactory;
-
-    public PostgresTypeRepository(IDbContextFactory<EveDbContext> dbContextFactory)
-    {
-        _dbContextFactory = dbContextFactory;
-    }
-
     public async Task<IEnumerable<EveType>> GetAll()
     {
         var dbContext = await _dbContextFactory.CreateDbContextAsync();

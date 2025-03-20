@@ -5,13 +5,15 @@
     ViewData["Title"] = "Planetary Interactions";
     var planetaryInteractions = await Model.PlanetaryInteractionsTask;
     var types = await Model.TypesTask;
+    var planets = await Model.PlanetsTask;
+    var schematics = await Model.SchematicsListTask;
 }
 
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
     @foreach (var planetaryInteraction in planetaryInteractions) 
     {
         var header = planetaryInteraction.Header ?? new Eve.Models.EveApi.PlanetaryInteractionHeader();
-        var planet = (await Model.PlanetsTask).Single(p => p.PlanetId == header.planet_id);
+        var planet = planets.Single(p => p.PlanetId == header.planet_id);
         var storageFacilities = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.StorageFacility));
         var p0Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.BasicIndustryFacility));
         var p1Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.AdvancedIndustryFacility));
@@ -31,21 +33,30 @@
                 }
 
                 <span><b>P0 Factories:</b></span><br/>
-                @foreach (var contents in p0Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
+                @* @foreach (var contents in p0Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
                         <span style="text-align: left;margin-right: 10px;">@contents.Key</span>
                         <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
                     </div>
-                }
-
-                <span><b>P1 Factories:</b></span><br/>
-                @foreach (var contents in p1Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
+                } *@
+                
+                @foreach (var contents in p0Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf))
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
-                        <span style="text-align: left;margin-right: 10px;">@contents.Key</span>
+                        <span style="text-align: left;margin-right: 10px;">@schematics.Single(s => s.SchematicId == contents.Key).SchematicName</span>
+                        <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
+                    </div>
+                }
+
+                <span><b>P1 Factories:</b></span><br/>
+                @foreach (var contents in p1Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf))
+                {
+                    <div style="width: 100%; display: flex;">
+                        <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
+                        <span style="text-align: left;margin-right: 10px;">@schematics.Single(s => s.SchematicId == contents.Key).SchematicName</span>
                         <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
                     </div>
                 }
@@ -72,3 +83,16 @@
         <br/> *@
     }
 </div>
+
+
+@foreach (var planetaryInteraction in planetaryInteractions)
+{
+    <span>Planet Name: @planets.Single(p => p.PlanetId == planetaryInteraction.Header.planet_id).Name</span>
+    <br/>
+    @(JsonSerializer.Serialize(planetaryInteraction)) 
+    <br/>
+    <br/>
+    <br/>
+}
+
+@*6gas 7ocean*@

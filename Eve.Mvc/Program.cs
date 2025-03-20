@@ -23,6 +23,10 @@ using Eve.Services.Interfaces.EveApi.Characters;
 using Eve.Services.EveApi.Characters;
 using StackExchange.Redis;
 using Microsoft.AspNetCore.DataProtection;
+using Eve.Repositories.Interfaces.Schematics;
+using Eve.Services.Interfaces.EveApi.Schematics;
+using Eve.Services.EveApi.Schematics;
+using Eve.Repositories.Schematics;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -75,6 +79,8 @@ builder.Services.AddScoped<ITypeRepository, PostgresTypeRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 builder.Services.AddScoped<IPlanetService, PlanetService>();
 builder.Services.AddScoped<ICharacterService, CharacterService>();
+builder.Services.AddScoped<ISchematicsService, SchematicService>();
+builder.Services.AddScoped<ISchematicsRepository, PostgresSchematicsRepository>();
 builder.Services.AddScoped<IDbContextFactory<EveDbContext>, EveDbContextFactory>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
