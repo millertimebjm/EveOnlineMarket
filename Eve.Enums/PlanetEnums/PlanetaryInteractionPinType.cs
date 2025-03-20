@@ -7,4 +7,5 @@ public class PlanetaryInteractionPinType
     public static string CommandCenter { get { return "Command Center"; } }
     public static string StorageFacility { get { return "Storage Facility"; } }
     public static string Launchpad { get { return "Launchpad"; } }
+    public static string Extractor { get { return "Extractor"; } }
 }

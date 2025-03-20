@@ -1,5 +1,6 @@
 ﻿@using System.Text.Json
 @using Eve.Enums.PlanetEnums
+@using Eve.Mvc.Services
 @model Eve.Mvc.Models.PlanetaryInteractionsViewModel
 @{
     ViewData["Title"] = "Planetary Interactions";
@@ -17,32 +18,75 @@
         var storageFacilities = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.StorageFacility));
         var p0Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.BasicIndustryFacility));
         var p1Factories = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.AdvancedIndustryFacility));
+        var launchpadFacilities = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.Launchpad));
+        var extractorFacilities = planetaryInteraction.pins.Where(p => types.Single(t => t.TypeId == p.type_id).Name.Contains(PlanetaryInteractionPinType.Extractor));
 
         <div class="shadow-lg p-3 mb-5 bg-white rounded" style="width: fit-content; height: fit-content; margin: 10px; position: relative;">
             <div style="display: inline-block;">
                 <h3><u>@planet.Name</u></h3>
 
-                <span><b>Storage Facility:</b></span><br/>
-                @foreach (var contents in storageFacilities.SelectMany(sf => sf.contents).OrderBy(sf => types.Single(t => sf.type_id == t.TypeId).Name))
+                @{
+                    var storageFacilitiesGrouped = storageFacilities.SelectMany(sf => sf.contents).OrderBy(sf => types.Single(t => sf.type_id == t.TypeId).Name);
+                }
+                @if (storageFacilitiesGrouped.Any())
+                {
+                    <span><b>Storage Facilities:</b></span><br/>
+                }
+                @foreach (var contents in storageFacilitiesGrouped)
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
-                        <span style="text-align: left;margin-right: 10px;">@types.Single(t => t.TypeId == contents.type_id).Name</span>
+                        <span style="text-align: left;margin-right: 10px;">
+                            @Html.ActionLink(types.Single(t => t.TypeId == contents.type_id).Name, "GetBuySellOrders", new { TypeId = contents.type_id }, new { target = "_blank" })
+                        </span>
                         <span style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
                     </div>
                 }
 
-                <span><b>P0 Factories:</b></span><br/>
-                @* @foreach (var contents in p0Factories.SelectMany(pf => pf.contents).GroupBy(pf => types.Single(t => t.TypeId == pf.type_id).Name))
+                @{
+                    var launchpadFacilitiesGrouped = launchpadFacilities.SelectMany(sf => sf.contents).OrderBy(sf => types.Single(t => sf.type_id == t.TypeId).Name);
+                }
+                @if (launchpadFacilitiesGrouped.Any())
+                {
+                    <span><b>Launchpads:</b></span><br/>
+                }
+                @foreach (var contents in launchpadFacilitiesGrouped)
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
-                        <span style="text-align: left;margin-right: 10px;">@contents.Key</span>
+                        <span style="text-align: left;margin-right: 10px;">
+                            @Html.ActionLink(types.Single(t => t.TypeId == contents.type_id).Name, "GetBuySellOrders", new { TypeId = contents.type_id }, new { target = "_blank" })
+                        </span>
+                        <span style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
+                    </div>
+                }
+                
+                @{
+                    var p0FactoriesGrouped = p0Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf);
+                }
+                @if (p0FactoriesGrouped.Any())
+                {
+                    <span><b>P0 Factories:</b></span><br/>
+                }
+                @foreach (var contents in p0FactoriesGrouped)
+                {
+                    <div style="width: 100%; display: flex;">
+                        <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
+                        <span style="text-align: left;margin-right: 10px;">
+                            @schematics.Single(s => s.SchematicId == contents.Key).SchematicName
+                        </span>
                         <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
                     </div>
-                } *@
-                
-                @foreach (var contents in p0Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf))
+                }
+
+                @{
+                    var p1FactoriesGrouped = p1Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf);
+                }
+                @if (p1FactoriesGrouped.Any())
+                {
+                    <span><b>P1 Factories:</b></span><br/>
+                }
+                @foreach (var contents in p1FactoriesGrouped)
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
@@ -51,13 +95,26 @@
                     </div>
                 }
 
-                <span><b>P1 Factories:</b></span><br/>
-                @foreach (var contents in p1Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf))
+                @{
+                    //var p1FactoriesGrouped = p1Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf);
+                }
+                @* @if (p1FactoriesGrouped.Any()) *@
+                @* //{ *@
+                    <span><b>Extractor Facilities:</b></span><br/>
+                @* //} *@
+                @foreach (var contents in extractorFacilities)
                 {
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
-                        <span style="text-align: left;margin-right: 10px;">@schematics.Single(s => s.SchematicId == contents.Key).SchematicName</span>
-                        <span style="margin-left: auto; text-align: right;">@contents.Count()</span>
+                        <span style="text-align: left;margin-right: 10px;">
+                            @Html.ActionLink(types.Single(t => t.TypeId == contents.extractor_details.product_type_id).Name, "GetBuySellOrders", new { TypeId = contents.extractor_details.product_type_id }, new { target = "_blank" })
+                             (@contents.extractor_details.heads.Count())
+                            </span>
+                        @if (contents.expiry_time.HasValue)
+                        {
+                            <span style="margin-left: auto; text-align: right;">@ViewHelperService.MinimalHumanReadableTimeSpan(contents.expiry_time.Value - DateTime.UtcNow)</span>
+                        }
+                        
                     </div>
                 }
             </div>
@@ -94,5 +151,3 @@
     <br/>
     <br/>
 }
-
-@*6gas 7ocean*@

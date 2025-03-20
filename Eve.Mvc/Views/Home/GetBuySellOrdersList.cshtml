@@ -1,4 +1,5 @@
 @using Eve.Models.EveApi
+@using Eve.Mvc.Services
 @model Eve.Mvc.Models.GetBuySellOrdersViewModel
 @{
     var eveUniverseTypesDictionary = (await Model.TypesTask) ?? new EveType();
@@ -37,11 +38,11 @@
         {
             <tr
                 class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 && capsuleerOrderCountTotal == capsuleerOrderCountCurrent ? "d-none" : "")">
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
+                <td style="text-align: right;">@ViewHelperService.EveReadableIskValue(marketOrder.Price)</td>
+                <td style="text-align: right;">@ViewHelperService.EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
                 <td style="text-align: right;">@marketOrder.VolumeTotal</td>
                 <td style="text-align: right;">@marketOrder.VolumeRemain</td>
-                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+                <td>@(ViewHelperService.HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
             </tr>
             count++;
             if (userOrderIds.Contains(marketOrder.OrderId)) capsuleerOrderCountCurrent++;
@@ -76,11 +77,11 @@
         {
             <tr
                 class="@(userOrderIds.Any(oid => oid == marketOrder.OrderId) ? "bg-secondary" : "") @(count > 4 ? "d-none" : "")">
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price)</td>
-                <td style="text-align: right;">@EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
+                <td style="text-align: right;">@ViewHelperService.EveReadableIskValue(marketOrder.Price)</td>
+                <td style="text-align: right;">@ViewHelperService.EveReadableIskValue(marketOrder.Price * marketOrder.VolumeRemain)</td>
                 <td style="text-align: right;">@marketOrder.VolumeTotal</td>
                 <td style="text-align: right;">@marketOrder.VolumeRemain</td>
-                <td>@(HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
+                <td>@(ViewHelperService.HumanReadableTimeSpan(marketOrder.TimeRemaining))</td>
             </tr>
             count++;
         }
@@ -92,44 +93,3 @@
         }
     </tbody>
 </table>
-
-@functions {
-    private string HumanReadableTimeSpan(TimeSpan t)
-    {
-        if (t.TotalSeconds <= 1)
-        {
-            return $@"{t:s\.ff} seconds";
-        }
-        if (t.TotalMinutes <= 1)
-        {
-            return $@"{t:%s} seconds";
-        }
-        if (t.TotalHours <= 1)
-        {
-            return $@"{t:%m} minutes";
-        }
-        if (t.TotalDays <= 1)
-        {
-            return $@"{t:%h} hours";
-        }
-
-        return $@"{t:%d} days";
-    }
-
-    private string EveReadableIskValue(decimal d)
-    {
-        if (d > 1000000000) // billion
-        {
-            return (d / 1000000000).ToString("F2") + "b";
-        }
-        if (d > 1000000) // million
-        {
-            return (d / 1000000).ToString("F2") + "m";
-        }
-        if (d > 1000) // thousand
-        {
-            return (d / 1000).ToString("F2") + "k";
-        }
-        return d.ToString("00");
-    }
-}
