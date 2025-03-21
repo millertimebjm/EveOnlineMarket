@@ -20,14 +20,23 @@ public class OAuth2AuthenticationService : IAuthenticationService
         string clientId,
         string clientSecret)
     {
-        var bodyContent = new StringContent(
-            $"grant_type=authorization_code&code={authorizationToken}",
-            Encoding.UTF8, // Specify encoding
-            "application/x-www-form-urlencoded" // Add Content-Type here
-        );
+        // var bodyContent = new StringContent(
+        //     $"grant_type=authorization_code&code={authorizationToken}",
+        //     Encoding.UTF8, // Specify encoding
+        //     "application/x-www-form-urlencoded" // Add Content-Type here
+        // );
+
+        var requestBody = new Dictionary<string, string>
+        {
+            {"grant_type", "authorization_code"},
+            {"code", authorizationToken},
+            {"client_id", clientId},
+            {"client_secret", clientSecret}
+        };
+        var content = new FormUrlEncodedContent(requestBody);
         
         return await GetTokenPrivate(
-            bodyContent,
+            content,
             clientId,
             clientSecret);
     }

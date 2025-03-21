@@ -98,13 +98,10 @@
                     </div>
                 }
 
-                @{
-                    //var p1FactoriesGrouped = p1Factories.Select(pf => pf.schematic_id).GroupBy(pf => pf);
-                }
-                @* @if (p1FactoriesGrouped.Any()) *@
-                @* //{ *@
+                @if (extractorFacilities.Any())
+                {
                     <span><b>Extractor Facilities:</b></span><br/>
-                @* //} *@
+                }
                 @foreach (var contents in extractorFacilities)
                 {
                     <div style="width: 100%; display: flex;">

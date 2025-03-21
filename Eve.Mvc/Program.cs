@@ -60,7 +60,6 @@ var connectionString = builder.Configuration
 Console.WriteLine($"Connection String: {connectionString}");
 if (connectionString == null) throw new ArgumentNullException(nameof(connectionString));
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAuthenticationService, OAuth2AuthenticationService>();
@@ -91,17 +90,6 @@ builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
         configuration.GetSection(_applicationNameConfigurationService).Bind(settings);
     });
 
-// builder.Services.AddDbContextFactory<EveDbContext>(opts => 
-//      opts.UseNpgsql(connectionString, options => options.MigrationsAssembly("Eve.Mvc"))
-//          .EnableSensitiveDataLogging()
-//          .LogTo(Console.WriteLine, LogLevel.Information));
-
-// First, configure Redis for data protection
-// var redis = ConnectionMultiplexer.Connect("localhost:6379");
-// builder.Services.AddDataProtection()
-//     .PersistKeysToStackExchangeRedis(redis, "DataProtection-Keys");
-
-// Then configure Redis for caching
 var redisPassword = builder.Configuration
     .GetValue(typeof(string), "EveOnlineMarket:RedisPassword")?
     .ToString();
