@@ -9,11 +9,9 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Eve.Services.Interfaces.Authentications;
 using Eve.Repositories.Interfaces.Users;
-using Eve.Services.Interfaces.EveApi;
 using Eve.Repositories.Interfaces.Types;
 using Eve.Models.Users;
 using Eve.Models.EveApi;
-using Eve.Models;
 using Eve.Configurations;
 using Eve.Services.Interfaces.EveApi.EveTypes;
 using Eve.Services.Interfaces.Orders;
@@ -21,6 +19,9 @@ using Eve.Services.Interfaces.EveApi.Characters;
 using Eve.Services.Interfaces.EveApi.Planets;
 using Eve.Models.EveTypes;
 using Eve.Services.Interfaces.EveApi.Schematics;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Collections.Concurrent;
+using Eve.Mvc.Services;
 
 namespace Eve.Mvc.Controllers;
 
@@ -36,6 +37,7 @@ public class HomeController : BaseController
     private readonly IOrdersService _ordersService;
     private readonly ICharacterService _characterService;
     private readonly ISchematicsService _schematicsService;
+    private readonly IDistributedCacheWrapper _distributedCache;
 
     public HomeController(
         IAuthenticationService authenticationService,
@@ -47,7 +49,8 @@ public class HomeController : BaseController
         IEveTypeService eveTypeService,
         IOrdersService ordersService,
         ICharacterService characterService,
-        ISchematicsService schematicsService) : base(
+        ISchematicsService schematicsService,
+        IDistributedCacheWrapper distributedCache) : base(
             userRepository,
             options,
             authenticationService)
@@ -62,6 +65,7 @@ public class HomeController : BaseController
         _ordersService = ordersService;
         _characterService = characterService;
         _schematicsService = schematicsService;
+        _distributedCache = distributedCache;
     }
 
     public async Task<IActionResult> Index()
@@ -249,14 +253,50 @@ public class HomeController : BaseController
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.type_id)));
         typesList.AddRange((await planetaryInteractionsTask).SelectMany(pi => pi.routes.Select(r => r.content_type_id)));
         typesList = typesList.Distinct().ToList();
+        var schematicsIds = (await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.schematic_id));
         var model = new PlanetaryInteractionsViewModel() 
         {
             PlanetaryInteractionsTask = planetaryInteractionsTask,
             PlanetsTask = _planetService.GetPlanets((await planetaryInteractionsTask).Select(pi => pi.Header?.planet_id ?? 0).ToList(), user.AccessToken),
-            TypesTask = _typeRepository.Search(new EveTypeSearchFilterModel(){ Ids = typesList.ToHashSet(), IsMarketableType = false, Take = 100, }),
+            TypesTask = _typeRepository.Search(new EveTypeSearchFilterModel()
+            { 
+                TypeIds = typesList.ToHashSet(), 
+                SchematicsIds = schematicsIds.ToHashSet(),
+                IsMarketableType = false, 
+                Take = 100, 
+            }),
         };
         model.SchematicsListTask = _schematicsService.GetAll((await planetaryInteractionsTask).SelectMany(pi => pi.pins.Select(p => p.schematic_id)).Where(p => p > 0).Distinct().ToList(), user.AccessToken);
+        model.BestBuyOrderValueByTypeTask = GetBestBuyOrderValueByTypeTask((await model.TypesTask).Select(t => t.TypeId), user);
+
         return View(model);
+    }
+
+    private async Task<IDictionary<int, decimal>> GetBestBuyOrderValueByTypeTask(IEnumerable<int> typeIds, User user)
+    {
+        IDictionary<int, decimal> bestBuyOrderValueByTypeDictionary = new ConcurrentDictionary<int, decimal>();
+        await Parallel.ForEachAsync(typeIds, async (typeId, token) => {
+            var value = await GetBestBuyOrderValueByTypeWithCache(typeId, user);
+            bestBuyOrderValueByTypeDictionary.Add(typeId, value);
+        });
+        return bestBuyOrderValueByTypeDictionary;
+    }
+
+    private async Task<decimal> GetBestBuyOrderValueByTypeWithCache(int typeId, User user)
+    {
+        var cacheKey = $"{DistributedCacheTypeEnum.BuySellOrdersByType}-{typeId}";
+        var orders = await _distributedCache.GetAsync<List<Order>>(cacheKey);
+        
+        if (orders == null)
+        {
+            orders = await _ordersService.GetBuySellOrders(typeId, user.AccessToken);
+            await _distributedCache.SetAsync(cacheKey, orders);
+        }
+        var order = orders
+            .Where(o => o.IsBuyOrder)
+            .OrderByDescending(o => o.Price)
+            .FirstOrDefault();
+        return order?.Price ?? 0m;
     }
 
     public async Task<IActionResult> BillOfMaterials()
@@ -276,7 +316,7 @@ public class HomeController : BaseController
 
         EveTypeSearchFilterModel eveTypeSearchFilterModel = new()
         {
-            Ids = ids,
+            TypeIds = ids ?? new HashSet<int>(),
             Keyword = keyword,
             Take = 20,
             Skip = 0,

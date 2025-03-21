@@ -8,6 +8,7 @@
     var types = await Model.TypesTask;
     var planets = await Model.PlanetsTask;
     var schematics = await Model.SchematicsListTask;
+    var bestBuyOrderValueByType = await Model.BestBuyOrderValueByTypeTask;
 }
 
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
@@ -34,12 +35,13 @@
                 }
                 @foreach (var contents in storageFacilitiesGrouped)
                 {
+                    var value = bestBuyOrderValueByType[contents.type_id];
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
                         <span style="text-align: left;margin-right: 10px;">
                             @Html.ActionLink(types.Single(t => t.TypeId == contents.type_id).Name, "GetBuySellOrders", new { TypeId = contents.type_id }, new { target = "_blank" })
                         </span>
-                        <span style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
+                        <span class="small-hover" data-title="@(ViewHelperService.EveReadableIskValue(value * contents.amount))" style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
                     </div>
                 }
 
@@ -52,12 +54,13 @@
                 }
                 @foreach (var contents in launchpadFacilitiesGrouped)
                 {
+                    var value = bestBuyOrderValueByType[contents.type_id];
                     <div style="width: 100%; display: flex;">
                         <span style="margin-left: 10px;">&nbsp;&nbsp;</span>
                         <span style="text-align: left;margin-right: 10px;">
                             @Html.ActionLink(types.Single(t => t.TypeId == contents.type_id).Name, "GetBuySellOrders", new { TypeId = contents.type_id }, new { target = "_blank" })
                         </span>
-                        <span style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
+                        <span class="small-hover" data-title="@(ViewHelperService.EveReadableIskValue(value * contents.amount))" style="margin-left: auto; text-align: right;">@contents.amount.ToString("N0")</span>
                     </div>
                 }
                 

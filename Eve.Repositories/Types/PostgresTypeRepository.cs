@@ -54,9 +54,9 @@ public class PostgresTypeRepository(IDbContextFactory<EveDbContext> _dbContextFa
         
         query = query.Where(q => !model.IsMarketableType || q.MarketGroupId > 0);
 
-        if (model.Ids != null && model.Ids.Any())
+        if (model.TypeIds.Any() || model.SchematicsIds.Any())
         {
-            query = query.Where(t => model.Ids.Contains(t.TypeId));
+            query = query.Where(t => model.TypeIds.Contains(t.TypeId) || (t.SchematicId != null && model.SchematicsIds.Contains(t.SchematicId.Value)));
         }
 
         if (!string.IsNullOrWhiteSpace(model.Keyword))

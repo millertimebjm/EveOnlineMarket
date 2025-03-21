@@ -2,7 +2,8 @@ namespace Eve.Models.EveTypes;
 
 public class EveTypeSearchFilterModel
 {
-    public HashSet<int>? Ids { get; set; }
+    public HashSet<int> TypeIds { get; set; } = new HashSet<int>();
+    public HashSet<int> SchematicsIds { get; set; } = new HashSet<int>();
     public bool IsMarketableType { get; set; } = true;
     public string? Keyword { get; set; }
     public int _take = 20;

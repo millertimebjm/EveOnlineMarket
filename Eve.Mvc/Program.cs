@@ -27,6 +27,7 @@ using Eve.Repositories.Interfaces.Schematics;
 using Eve.Services.Interfaces.EveApi.Schematics;
 using Eve.Services.EveApi.Schematics;
 using Eve.Repositories.Schematics;
+using Eve.Mvc.Services;
 
 const string _applicationNameConfigurationService = "EveOnlineMarket";
 const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
@@ -82,6 +83,7 @@ builder.Services.AddScoped<ICharacterService, CharacterService>();
 builder.Services.AddScoped<ISchematicsService, SchematicService>();
 builder.Services.AddScoped<ISchematicsRepository, PostgresSchematicsRepository>();
 builder.Services.AddScoped<IDbContextFactory<EveDbContext>, EveDbContextFactory>();
+builder.Services.AddScoped<IDistributedCacheWrapper, DistributedCacheWrapper>();
 
 builder.Services.AddOptions<EveOnlineMarketConfigurationService>()
     .Configure<IConfiguration>((settings, configuration) =>

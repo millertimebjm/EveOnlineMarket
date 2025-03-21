@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Eve.Models.EveApi;
 
@@ -13,4 +14,6 @@ public class PlanetaryInteractionsViewModel
         = Task.FromResult(new List<EveType>());
     public Task<List<Schematic>> SchematicsListTask { get; set; }
         = Task.FromResult(new List<Schematic>());
+    public Task<IDictionary<int, decimal>> BestBuyOrderValueByTypeTask { get; set; }
+        = Task.FromResult((IDictionary<int, decimal>)new Dictionary<int, decimal>());
 }

@@ -43,13 +43,16 @@ public class OAuth2AuthenticationService : IAuthenticationService
         string clientSecret,
         string refreshToken)
     {
-        var bodyContent = new StringContent(
-            $"grant_type=refresh_token&refresh_token={refreshToken}",
-            Encoding.UTF8, // Specify encoding
-            "application/x-www-form-urlencoded" // Add Content-Type here
-        );
+        var requestBody = new Dictionary<string, string>
+        {
+            {"grant_type", "refresh_token"},
+            {"refresh_token", refreshToken},
+            {"client_id", clientId},
+            {"client_secret", clientSecret}
+        };
+        var content = new FormUrlEncodedContent(requestBody);
         return await GetTokenPrivate(
-            bodyContent,
+            content,
             clientId,
             clientSecret);
     }
@@ -63,9 +66,6 @@ public class OAuth2AuthenticationService : IAuthenticationService
             HttpMethod.Post,
             new Uri(_eveOnlineApiOauthUrl));
         message.Content = bodyContent;
-        var base64AuthString = Base64Encode($"{clientId}:{clientSecret}");
-        message.Headers.Add("Authorization",$"Basic {base64AuthString}");
-        message.Headers.Add("Host", "login.eveonline.com");
         var response = await _httpClientWrapper.SendAsync(message);
         response.EnsureSuccessStatusCode();
         var authModel = await response.Content.ReadFromJsonAsync<Authentication>();
